@@ -175,12 +175,16 @@ if __name__ == '__main__':
     plt.hist(eg, bins=20, label='enu correct')
     plt.hist(ef, bins=20, label='enu false')
     plt.title('distribution output network electon neutrino')
+    plt.xlabel('output network')
+    plt.ylabel('number events')
     plt.legend()
     plt.show()
 
     plt.hist(mg, bins=20, label='munu correct')
     plt.hist(mf, bins=20, label='munu false')
     plt.title('distribution output network muon neutrino')
+    plt.xlabel('output network')
+    plt.ylabel('number events')
     plt.legend()
     plt.show()
 

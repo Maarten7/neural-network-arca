@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 PATH = "/user/postm/"
 LOG_DIR = PATH + "log"
-EVT_TYPES = ['K40', 'eCC', 'eNC', 'muCC']
+EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
 
 def show_event(event):
     """Shows 3D plot of evt"""
@@ -69,6 +69,6 @@ def num_events(root_file_range):
             z[evt_type] = len(f)
     return z
     
-NUM_TRAIN_EVENTS = sum(num_events(root_files()).values())
-NUM_TEST_EVENTS = sum(num_events(root_files(train=False, test=True)).values())
-NUM_EVENTS = sum(num_events(root_files(train=True, test=True)).values())
+NUM_TRAIN_EVENTS = 329905
+NUM_TEST_EVENTS = 81914
+NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS 
