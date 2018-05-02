@@ -83,10 +83,80 @@ def output_distribution():
                 mf.append(predictions[i][1])
     
     return eg, ef, mg, mf
+
+def energie_distribution():
+    z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+    q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % 'three_classes_sum_tot')
+    energies = []
+    for root_file, _ in root_files(train=False, test=True):
+        energies.extend(q[root_file + 'E'].value)
+
+    predictions = z['predictions_bg']
+    labels = z['labels_bg']
+    events = z['events_bg']
+
+    eg, ef, mg, mf  = [], [], [], []
+    for i in range(len(predictions)):
+        ll = np.argmax(labels[i])
+        lt = np.argmax(predictions[i])
+        
+        if ll == lt:
+            #restult good
+            if ll == 0:
+                # electron
+                eg.append(energies[i])
+            else:
+                # muon
+                mg.append(energies[i])
+        else:
+            if ll == 0:
+                ef.append(energies[i])
+            else:
+                mf.append(energies[i])
     
+    return eg, ef, mg, mf
+
+def histogram_energie(): 
+    eg, ef, mg, mf = energie_distribution()
+
+    plt.hist(eg, bins=40, label='enu correct')
+    plt.hist(ef, bins=40, label='enu false')
+    plt.title('distribution energie electon neutrino')
+    plt.xlabel('energie')
+    plt.ylabel('number events')
+    plt.legend()
+    plt.show()
+
+    plt.hist(mg, bins=40, label='munu correct')
+    plt.hist(mf, bins=40, label='munu false')
+    plt.title('distribution energie muon neutrino')
+    plt.xlabel('energie')
+    plt.ylabel('number events')
+    plt.legend()
+    plt.show()
 
 
-def histogram_plot():
+def histogram_output(): 
+    eg, ef, mg, mf = output_distribution()
+
+    plt.hist(eg, bins=20, label='enu correct')
+    plt.hist(ef, bins=20, label='enu false')
+    plt.title('distribution output network electon neutrino')
+    plt.xlabel('output network')
+    plt.ylabel('number events')
+    plt.legend()
+    plt.show()
+
+    plt.hist(mg, bins=20, label='munu correct')
+    plt.hist(mf, bins=20, label='munu false')
+    plt.title('distribution output network muon neutrino')
+    plt.xlabel('output network')
+    plt.ylabel('number events')
+    plt.legend()
+    plt.show()
+
+
+def histogram_n_hits():
     save_path = PATH + 'data/results/%s/' % title
     label=['e correct', 'e false', 'm correct', 'm false']
     eg, ef, mg, mf = result_plot()
@@ -170,21 +240,5 @@ def plot_acc_cost():
 if __name__ == '__main__':
 #    plot_acc_cost()
 #    histogram_plot()
-    eg, ef, mg, mf = output_distribution()
 
-    plt.hist(eg, bins=20, label='enu correct')
-    plt.hist(ef, bins=20, label='enu false')
-    plt.title('distribution output network electon neutrino')
-    plt.xlabel('output network')
-    plt.ylabel('number events')
-    plt.legend()
-    plt.show()
-
-    plt.hist(mg, bins=20, label='munu correct')
-    plt.hist(mf, bins=20, label='munu false')
-    plt.title('distribution output network muon neutrino')
-    plt.xlabel('output network')
-    plt.ylabel('number events')
-    plt.legend()
-    plt.show()
-
+    histogram_energie()
