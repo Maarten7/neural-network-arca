@@ -7,15 +7,28 @@ import importlib
 from helper_functions import *
 
 EventFile.read_timeslices = True
-z = {}
-for root_file, evt_type in root_files(train=True, test=True):
-    print root_file,
-    f = EventFile(root_file)
-    f.use_tree_index_for_mc_reading = True
-    try:     
-        z[evt_type] += len(f) 
+rf = root_files(train=True, test=True)
+root_file, _ = rf.next()
+f = EventFile(root_file)
+f.use_tree_index_for_mc_reading = True
+fi = iter(f)
+evt = fi.next()
 
-    except KeyError:
-        z[evt_type] = len(f)
+for hit in evt.mc_hits:
+    print hit 
 
-print z
+for trk in evt.mc_trks:
+    print str(trk)
+
+
+while True:
+    try:
+        evt = fi.next()
+    except StopIteration:
+        pass
+
+for hit in evt.mc_hits:
+    print str(hit)
+
+for trk in evt.mc_trks:
+    print str(trk)
