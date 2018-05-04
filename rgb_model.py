@@ -5,7 +5,7 @@ import aa
 import numpy as np
 from helper_functions import *
 
-title = 'three_classes_sum_tot'
+title = 'rgb'
 
 def conv3d(x, W):
     return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
@@ -27,50 +27,58 @@ def bias(shape):
     b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
     return b
 
-x = tf.placeholder(tf.float32, [None, 1, 13, 13, 18], name="X_placeholder")
+def print_tensor(x):
+    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
+
+x = tf.placeholder(tf.float32, [None, 31, 13, 13, 18], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
 
+
 def cnn(x):
-    x = tf.reshape(x, shape=[-1, 13, 13, 18, 1]) 
-    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
+    x = tf.reshape(x, shape=[-1, 13, 13, 18, 31]) 
+    print_tensor(x)
     with tf.name_scope("Conv1"):
-        num_layers_1 = 35 
+        nodes1 = 35 
         conv1 = tf.nn.relu(
-            conv3d(x, weights([6, 6, 6, 1, num_layers_1])) + bias(num_layers_1))
-        print 'conv1\t\t', conv1.shape
-        conv1 = maxpool3d(conv1)
-        print 'conv1 mxpl\t', conv1.shape
+            conv3d(x, weights([4, 4, 4, 31, nodes1])) + bias(nodes1))
+        print_tensor(conv1)
 
     with tf.name_scope("Conv2"):
-        num_layers_2 = 60
+        nodes2 = 35 
         conv2 = tf.nn.relu(
-            conv3d(conv1, weights([3, 3, 3, num_layers_1, num_layers_2])) + bias(num_layers_2))
-        print 'conv2\t\t', conv2.shape
+            conv3d(conv1, weights([3, 3, 3, nodes1, nodes2])) + bias(nodes2))
+        print_tensor(conv2)
+
         conv2 = maxpool3d(conv2)
-        print 'conv2 mxpt\t', conv2.shape
+        print_tensor(conv2)
 
     with tf.name_scope("Conv3"):
-        num_layers_3 = 15 
+        nodes3 = 15 
         conv3 = tf.nn.relu(
-            conv3d(conv2, weights([2, 2, 2, num_layers_2, num_layers_3])) + bias(num_layers_3))
-        print 'conv3\t\t', conv3.shape
+            conv3d(conv2, weights([2, 2, 2, nodes2, nodes3])) + bias(nodes3))
+        print_tensor(conv3)
+	
         conv3 = maxpool3d(conv3)
-        print 'conv3 mxpl\t', conv3.shape
+        print_tensor(conv3)
     
     elements = np.prod(conv3._shape_as_list()[1:])
     fc = tf.reshape(conv3, [-1, elements])
-    print 'fc\t\t', fc.shape
+    print_tensor(fc)
     with tf.name_scope("FullyC1"):
+	nodes4 = 100_
         fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights([elements, 1028])) + bias(1028))
-    print 'fc l1\t\t', fc.shape
+            tf.matmul(fc, weights([elements, 100])) + bias(100))
+  	print_tensor(fc)
+
     with tf.name_scope("FullyC2"):
+	nodes5 = 40
         fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights([1028, 60])) + bias(60))
-        print 'fc l2\t\t', fc.shape
+            tf.matmul(fc, weights([nodes4, nodes5])) + bias(nodes5))
+        print_tensor(fc)
+
         labels = 3
-        output = tf.nn.softmax(tf.matmul(fc, weights([60, labels])) + bias(labels))
-        print 'output\t\t', output.shape
+        output = tf.nn.softmax(tf.matmul(fc, weights([nodes5, labels])) + bias(labels))
+        print_tensor(output)
     return output
 
 class Data_handle(object):
@@ -112,10 +120,11 @@ class Data_handle(object):
 
     def make_event(self, hits):
         "Take aa_net hits and put them in cube numpy arrays"
-        event = np.zeros((1, 13, 13, 18))
+        event = np.zeros((31, 13, 13, 18))
         for hit in hits:
             tot = hit.tot
-            pmt = self.det.get_pmt(hit.dom_id, hit.channel_id)
+	    channel_id = hit.channel_id
+            pmt = self.det.get_pmt(hit.dom_id, channel_id)
             dom = self.det.get_dom(pmt)
             line_id = dom.line_id
             # also valid
@@ -124,7 +133,7 @@ class Data_handle(object):
             z = self.z_index[round(dom.pos.z)] 
             y, x = self.line_to_index(dom.line_id)
 
-            event[0, x, y, z] += tot / self.NORM_FACTOR 
+            event[channel_id, x, y, z] += tot / self.NORM_FACTOR 
         return event
 
     def add_hit_to_event(self, event, hit):
