@@ -50,4 +50,43 @@ def data_writer(title):
             dset = hfile.create_dataset(root_file + "n_hits", data=n_hits, dtype='int64')        
             ####################################################
             
-data_writer(title=PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title)
+#data_writer(title=PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title)
+
+def data_adder(title):
+    with h5py.File(title, 'a') as hfile:
+#        for root_file, evt_type in root_files(train=False, test=True):
+#            del hfile[root_file + 'positions']
+#            del hfile[root_file + 'directions']
+            
+        for root_file, evt_type in root_files(train=False, test=True):
+            print root_file
+                
+            f = EventFile(root_file)
+            f.use_tree_index_for_mc_reading = True
+           
+            positions = np.empty((0,3))
+            directions = np.empty((0,3))
+            for evt in f:
+                try:
+                    trk = evt.mc_trks[0] 
+                    pos = trk.pos
+                    x, y, z = pos.x, pos.y, pos.z
+                    dir = trk.dir
+                    dx, dy, dz = dir.x, dir.y, dir.z
+                    positions = np.append(positions, [[x, y, z]], axis=0)
+                    directions = np.append(directions, [[dx, dy, dz]], axis=0)
+                except IndexError:
+                    continue
+
+            dset = hfile.create_dataset(root_file + 'positions', data=positions)
+            dset = hfile.create_dataset(root_file + 'directions', data=directions)
+
+data_adder(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title)
+
+
+
+                
+                
+
+
+
