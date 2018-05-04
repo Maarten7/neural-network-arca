@@ -47,34 +47,40 @@ def bias(shape):
     b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
     return b
 
-x = tf.placeholder(tf.float32, [None, 10, 10, 10], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, 10, 10, 10, 1], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, 2], name="Y_placeholder")
+print x.shape
 
-x = tf.unstack(x, -1)
-conv1 = tf.nn.conv2d(input=x, filter=weights([4,4, 1, 10]))
-conv1 = conv1 + bias(10)
-conv1 = tf.nn.relu(conv1)
-conv1 = tf.nn.maxpool(conv1, ksize=[1,1,1,1], strides=[1,1,1,1], padding='VALID') 
 
-elements = np.prod(conv1._shape_as_list()[1:])
-fc = tf.reshape(conv1, [-1, elements])
+m = []
+for i in range(10):
+    conv1 = tf.nn.conv2d(input=x[:,i,:,:,:], filter=weights([4,4, 1, 10]), strides=[1,1,1,1], padding='VALID')
+    conv1 = conv1 + bias(10)
+    conv1 = tf.nn.relu(conv1)
+    conv1 = tf.nn.max_pool(conv1, ksize=[1,1,1,1], strides=[1,1,1,1], padding='VALID') 
 
-fc = tf.matmul(fc, weights([elements, 10]))
-fc = fc + bias(10)
-fc = tf.nn.relu(fc)
+    elements = np.prod(conv1._shape_as_list()[1:])
+    fc = tf.reshape(conv1, [-1, elements])
 
-fc = tf.matmul(fc, weights([10, 10]))
-fc = fc + bias(10)
-fc = tf.nn.relu(fc)
+    fc = tf.matmul(fc, weights([elements, 10]))
+    fc = fc + bias(10)
+    fc = tf.nn.relu(fc)
 
+    fc = tf.matmul(fc, weights([10, 16]))
+    fc = fc + bias(16)
+    fc = tf.nn.relu(fc)
+    print fc.shape
+    m.append(fc)
+c = tf.concat(m, 1)
+print c
 
 time_steps = 10
 num_units = 64
 n_input = 10 #*10
 n_classes = 2
 
-lstm_layer = rnn.BasicLSTMCell(num_units, forget_bias=1)
-outputs, _ = rnn.static_rnn(lstm_layer, fc, dtype=tf.float32)
+lstm_layer = tf.contrib.rnn.BasicLSTMCell(num_units, forget_bias=1)
+outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, c, dtype=tf.float32)
 prediction = tf.matmul(outputs[-1], weights([num_units, num_classes])) + bias(num_classes)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=y))
