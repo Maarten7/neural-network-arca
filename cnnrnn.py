@@ -36,24 +36,41 @@ class cnnrnn_model:
         m = []
         for i in range(0,time_steps):
             # batch, time_step, window_size, num_sensors
+            print "################################################"
+            print self.X.shape
+            print self.X[:,i,:,:].shape
+            
             m1 = conv1d(self.X[:,i,:,:], num_filters=filters*1, filter_width=filter_size, stride=1, padding='SAME')
             m1 = tf.nn.relu(m1,name='relu1d')
+            print m1.shape
             m1 = tf.nn.pool(m1, window_shape=(4,), pooling_type='MAX', padding='SAME', strides=(4,), name='pool1d')
+            print m1.shape
             m1 = conv1d(m1, num_filters=filters*1, filter_width=filter_size, stride=1, padding='SAME')
             m1 = tf.nn.relu(m1,name='relu1d')
+            print m1.shape
             m1 = tf.nn.pool(m1, window_shape=(4,), pooling_type='MAX', padding='SAME', strides=(4,), name='pool1d')
+            print m1.shape
+
             m1 = conv1d(m1, num_filters=filters*1, filter_width=filter_size, stride=1, padding='SAME')
             m1 = tf.nn.relu(m1,name='relu1d')
+            print m1.shape
             m1 = tf.nn.pool(m1, window_shape=(2,), pooling_type='MAX', padding='SAME', strides=(2,), name='pool1d')
+            print m1.shape
+
             m1 = conv1d(m1, num_filters=filters*1, filter_width=1, stride=1, padding='SAME')
             m1 = tf.nn.relu(m1,name='relu1d')
+            print m1.shape
             m1 = tf.nn.pool(m1, window_shape=(2,), pooling_type='MAX', padding='SAME', strides=(2,), name='pool1d')
+            print m1.shape
+
             sh1 = int(m1.get_shape()[1])
             sh2 = int(m1.get_shape()[2])
             m1 = tf.reshape(m1, [-1,1,sh1*sh2])
+            print m1.shape
             m.append(m1)
             
         c = tf.concat(m,1)
+        print c
 
         basic_cell = tf.nn.rnn_cell.BasicRNNCell(num_units=rnn_nodes)
         model, states = tf.nn.dynamic_rnn(cell=basic_cell, inputs=c, dtype=tf.float32, time_major=False)
@@ -66,6 +83,8 @@ class cnnrnn_model:
         self.training_op = optimizer.minimize(self.loss) 
         self.init = tf.global_variables_initializer()
         ###### end model creation #############################################################
+
+
 
 # some simulated data to play with
 def create_test_data(batch_size, time_steps, window_size, num_sensors):
@@ -130,33 +149,33 @@ trainX, trainY = create_test_data(batch_size, time_steps, window_size, num_senso
 
 ###### model creation #############################################################
 model = cnnrnn_model(time_steps,window_size,num_sensors,filters,filter_size,rnn_nodes)
-
-###### saver object to save and restore model variables ###########################
-saver = tf.train.Saver()
-
+#
+####### saver object to save and restore model variables ###########################
+#saver = tf.train.Saver()
+#
 ###### model training #############################################################
-with tf.Session() as sess:
-    sess.run(model.init)       
-    for e in range(0,n_epochs):
-        sess.run(model.training_op, feed_dict={model.X: trainX, model.Y: trainY})
-        loss_out = sess.run(model.loss, feed_dict={model.X: trainX, model.Y: trainY})
-        if (e+1) % 100 == 1:
-            print 'epoch = ' + str(e+1) + '/' + str(n_epochs) + ', loss = ' + str(loss_out)
-        if (e+1) % 5000 == 1:
-            print 'epoch = ' + str(e+1) + '/' + str(n_epochs) + ', loss = ' + str(loss_out)
-    saver.save(sess,'/tmp/test-model')
-    result = sess.run(model.model, feed_dict={model.X: trainX, model.Y: trainY})
-    print result.T
-###### end model training #########################################################
-
-###### example restoring model ####################################################
-tf.reset_default_graph()
-with tf.Session() as sess:
-    new_saver = tf.train.import_meta_graph('/tmp/test-model.meta')
-    new_saver.restore(sess,tf.train.latest_checkpoint('/tmp/'))
-    graph = tf.get_default_graph()
-    X = graph.get_tensor_by_name("X:0")
-    Y = graph.get_tensor_by_name("Y:0")
-    model = graph.get_tensor_by_name('dense/BiasAdd:0')
-    result = sess.run(model, feed_dict={X: trainX, Y: trainY})
-    print result.T
+#with tf.Session() as sess:
+#    sess.run(model.init)       
+#    for e in range(0,n_epochs):
+#        sess.run(model.training_op, feed_dict={model.X: trainX, model.Y: trainY})
+#        loss_out = sess.run(model.loss, feed_dict={model.X: trainX, model.Y: trainY})
+#        if (e+1) % 100 == 1:
+#            print 'epoch = ' + str(e+1) + '/' + str(n_epochs) + ', loss = ' + str(loss_out)
+#        if (e+1) % 5000 == 1:
+#            print 'epoch = ' + str(e+1) + '/' + str(n_epochs) + ', loss = ' + str(loss_out)
+#    saver.save(sess,'/tmp/test-model')
+#    result = sess.run(model.model, feed_dict={model.X: trainX, model.Y: trainY})
+#    print result.T
+####### end model training #########################################################
+#
+####### example restoring model ####################################################
+#tf.reset_default_graph()
+#with tf.Session() as sess:
+#    new_saver = tf.train.import_meta_graph('/tmp/test-model.meta')
+#    new_saver.restore(sess,tf.train.latest_checkpoint('/tmp/'))
+#    graph = tf.get_default_graph()
+#    X = graph.get_tensor_by_name("X:0")
+#    Y = graph.get_tensor_by_name("Y:0")
+#    model = graph.get_tensor_by_name('dense/BiasAdd:0')
+#    result = sess.run(model, feed_dict={X: trainX, Y: trainY})
+#    print result.T
