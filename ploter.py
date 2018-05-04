@@ -4,6 +4,7 @@ import importlib
 import sys
 import importlib
 import matplotlib.pyplot as plt
+import math
 from mpl_toolkits.mplot3d import Axes3D
 from helper_functions import *
 
@@ -12,6 +13,13 @@ from helper_functions import *
 #title = model.title
 
 title = 'sum_tot'
+title2 = 'three_classes_sum_tot'
+
+z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title2  )
+predictions = z['predictions_bg']
+labels = z['labels_bg']
+events = z['events_bg']
 
 def make_list_from_txt(title):
     file_handle = open(title, 'r')
@@ -25,136 +33,106 @@ def make_list_from_txt(title):
             continue
     return data   
 
+def hist_fill(list_value):
+    eg, ef, mg, mf  = [], [], [], []
+    ll = np.argmax(labels.value, axis=1)
+    lt = np.argmax(predictions.value, axis=1)
+    eq = np.equal(ll, lt)
+    for i in range(len(predictions)):
+        x = list_value[i] 
+        typ = ll[i]
+        pr = predictions[i][typ]
+        if eq[i]: # correct prediciont
+            if typ == 0 and 0.97 < pr < 1: # electon
+                eg.append(x) 
+            elif typ == 1 and 0.97 < pr < 1: # muon
+                mg.append(x)
+        if not eq[i]: # incorrect prediction
+            if typ == 0 and 0 < pr < .03: # electron
+                ef.append(x) 
+            elif typ == 1 and 0 < pr < .03: # electron 
+                mf.append(x)
 
-def result_plot():
-    z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-    predictions = z['predictions_bg']
-    labels = z['labels_bg']
-    events = z['events_bg']
+    return eg, ef, mg, mf
 
+def nhits_distribution():
     nhits = []
-    q = h5py.File('mc_hits_test.hdf5', 'r')
     for root_file, _ in root_files(train=False, test=True):
-        nhits.extend(q[root_file + 'nhits'].value)
-
-    eg, ef, mg, mf  = [], [], [], []
-    for i in range(len(predictions)):
-        numhits = nhits[i] 
-
-        ll = np.argmax(labels[i])
-        lt = np.argmax(predictions[i])
-
-        if ll == lt:
-            if ll == 0:
-                eg.append(numhits)
-            else:
-                mg.append(numhits)
-        else:
-            if ll == 0:
-                ef.append(numhits)
-            else:
-                mf.append(numhits)
-     
-    return eg, ef, mg, mf
-
-def output_distribution():
-    z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-    predictions = z['predictions_bg']
-    labels = z['labels_bg']
-    events = z['events_bg']
-
-    eg, ef, mg, mf  = [], [], [], []
-    for i in range(len(predictions)):
-        ll = np.argmax(labels[i])
-        lt = np.argmax(predictions[i])
-        
-        if ll == lt:
-            #restult good
-            if ll == 0:
-                # electron
-                eg.append(predictions[i][0])
-            else:
-                # muon
-                mg.append(predictions[i][1])
-        else:
-            if ll == 0:
-                ef.append(predictions[i][0])
-            else:
-                mf.append(predictions[i][1])
-    
-    return eg, ef, mg, mf
+        nhits.extend(q[root_file + 'n_hits'].value)
+    return hist_fill(nhits)
 
 def energie_distribution():
-    z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-    q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % 'three_classes_sum_tot')
     energies = []
     for root_file, _ in root_files(train=False, test=True):
-        energies.extend(q[root_file + 'E'].value)
+        energies.extend(np.log(q[root_file + 'E'].value))
 
-    predictions = z['predictions_bg']
-    labels = z['labels_bg']
-    events = z['events_bg']
+    return hist_fill(energies)
 
-    eg, ef, mg, mf  = [], [], [], []
-    for i in range(len(predictions)):
-        ll = np.argmax(labels[i])
-        lt = np.argmax(predictions[i])
+def pos_distribution(i):
+    positions = []
+    for root_file, _ in root_files(train=False, test=True):
+        for pos in q[root_file + 'positions'].value:
+            positions.append(pos[i])
+    return hist_fill(positions)
+
+def dir_distribution(i):
+    directions= []
+    for root_file, _ in root_files(train=False, test=True):
+        for dir in q[root_file + 'directions'].value:
+            directions.append(dir[i])
+    return hist_fill(directions)
+
+def theta_distribution():
+    thetas = []
+    for root_file, _ in root_files(train=False, test=True):
+        for dir in q[root_file + 'directions'].value:
+            dx, dy, dz = dir
+            theta = np.arctan2(dz, math.sqrt(dx**2 + dy**2)) 
+            thetas.append(np.cos(theta))
+    return hist_fill(thetas) 
+
+def phi_distribution():
+    phis = []
+    for root_file, _ in root_files(train=False, test=True):
+        for dir in q[root_file + 'directions'].value:
+            dx, dy, dz = dir
+            phi = np.arctan2(dy, dx) 
+            phis.append(phi) 
+    return hist_fill(phis) 
+
+def output_distribution():
+    return hist_fill(predictions.value[np.where(labels.value == 1)])
+
+def histogram(distribution, bins, xlabel, domain=None, i=0): 
+    eg, ef, mg, mf = distribution()
+    fig, (ax1, ax2) = plt.subplots(1,2)
+    for ax, type_good, type_false, stype in [(ax1, eg, ef, 'electron'), (ax2, mg, mf, 'muon')]:    
+        ax.hist(type_good, bins=bins, range=domain, normed=True, label='%s correct' % stype)
+        ax.hist(type_false, bins=bins, range=domain, normed=True, label='%s false' % stype)
+        ax.set_title(distribution.__name__ + ' ' + stype)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel('number events')
+        ax.legend()
+    plt.show()
         
-        if ll == lt:
-            #restult good
-            if ll == 0:
-                # electron
-                eg.append(energies[i])
-            else:
-                # muon
-                mg.append(energies[i])
-        else:
-            if ll == 0:
-                ef.append(energies[i])
-            else:
-                mf.append(energies[i])
-    
-    return eg, ef, mg, mf
-
-def histogram_energie(): 
-    eg, ef, mg, mf = energie_distribution()
-
-    plt.hist(eg, bins=40, label='enu correct')
-    plt.hist(ef, bins=40, label='enu false')
-    plt.title('distribution energie electon neutrino')
-    plt.xlabel('energie')
-    plt.ylabel('number events')
-    plt.legend()
+def plot_acc_cost():
+    fig, (ax1, ax2) = plt.subplots(1,2)
+    try:
+        data = make_list_from_txt(PATH + 'data/results/%s/cost.txt' % title)
+        ax1.plot(data)
+    except IOError: 
+        pass
+    ax1.set_title('Cost/Loss as fuction of training epochs')
+    ax1.set_xlabel('Number of epochs')
+    ax1.set_ylabel('Cross entropy')
+    try:
+        ax2.plot(make_list_from_txt(PATH + 'data/results/%s/acc.txt' % title))
+    except IOError:
+        pass 
+    ax2.set_title('Accuracy on training sets')
+    ax2.legend()
+    ax2.set_xlabel('epochs')
     plt.show()
-
-    plt.hist(mg, bins=40, label='munu correct')
-    plt.hist(mf, bins=40, label='munu false')
-    plt.title('distribution energie muon neutrino')
-    plt.xlabel('energie')
-    plt.ylabel('number events')
-    plt.legend()
-    plt.show()
-
-
-def histogram_output(): 
-    eg, ef, mg, mf = output_distribution()
-
-    plt.hist(eg, bins=20, label='enu correct')
-    plt.hist(ef, bins=20, label='enu false')
-    plt.title('distribution output network electon neutrino')
-    plt.xlabel('output network')
-    plt.ylabel('number events')
-    plt.legend()
-    plt.show()
-
-    plt.hist(mg, bins=20, label='munu correct')
-    plt.hist(mf, bins=20, label='munu false')
-    plt.title('distribution output network muon neutrino')
-    plt.xlabel('output network')
-    plt.ylabel('number events')
-    plt.legend()
-    plt.show()
-
 
 def histogram_n_hits():
     save_path = PATH + 'data/results/%s/' % title
@@ -216,29 +194,50 @@ def histogram_n_hits():
     plt.plot(b[1:], acc)
     plt.savefig(save_path + 'Acc_all')
     plt.show()
-    
 
-def plot_acc_cost():
-    fig, (ax1, ax2) = plt.subplots(1,2)
-    try:
-        data = make_list_from_txt(PATH + 'data/results/%s/cost.txt' % title)
-        ax1.plot(data)
-    except IOError: 
-        pass
-    ax1.set_title('Cost/Loss as fuction of training epochs')
-    ax1.set_xlabel('Number of epochs')
-    ax1.set_ylabel('Cross entropy')
-    try:
-        ax2.plot(make_list_from_txt(PATH + 'data/results/%s/acc.txt' % title))
-    except IOError:
-        pass 
-    ax2.set_title('Accuracy on training sets')
-    ax2.legend()
-    ax2.set_xlabel('epochs')
+def positions():
+    ll = np.argmax(labels.value, axis=1)
+    lt = np.argmax(predictions.value, axis=1)
+    eq = np.equal(ll, lt)
+    
+    positions = []
+    for root_file, _ in root_files(train=False, test=True):
+        for pos in q[root_file + 'positions'].value:
+            positions.append(pos)
+    egx, efx, mgx, mfx = [], [], [], []
+    egy, efy, mgy, mfy = [], [], [], []
+    for i in range(len(predictions)):
+        pr = predictions[i]
+        x, y, z = positions[i]
+        typ = ll[i]
+        pr = predictions[i][typ]
+        if eq[i]: # correct prediciont
+            if typ == 0 and 0.97 < pr < 1: # electon
+                egx.append(x)
+                egy.append(y)
+            elif typ == 1 and 0.97 < pr < 1: # muon
+                mgx.append(x)
+                mgy.append(y)
+        if not eq[i]: # incorrect prediction
+            if typ == 0 and 0 < pr < .03: # electron
+                efx.append(x)
+                efy.append(y)
+            elif typ == 1 and 0 < pr < .03: # electron 
+                mfx.append(x)
+                mfy.append(y)
+    plt.plot(egx, egy, 'g.')
+    plt.plot(efx, efy, 'r.')
+    plt.plot(mgx, mgy, 'g^')
+    plt.plot(mfx, mfy, 'r^')
     plt.show()
 
 if __name__ == '__main__':
 #    plot_acc_cost()
-#    histogram_plot()
+#    histogram(output_distribution, bins=40, domain=(0,1), xlabel='output')
+#    histogram(energie_distribution, bins=100,domain=None, xlabel='energie')
+#    histogram(nhits_distribution, bins=100, domain=(0,200), xlabel='mc hits')
+    
+    histogram(theta_distribution, bins=50, domain=None, xlabel=r'$\cos(\theta)$')
+    histogram(phi_distribution, bins=50, domain=None, xlabel='$\phi$')
+    positions()
 
-    histogram_energie()
