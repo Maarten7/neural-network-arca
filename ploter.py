@@ -13,13 +13,13 @@ from helper_functions import *
 #title = model.title
 
 title = 'sum_tot'
-title2 = 'three_classes_sum_tot'
+title = 'three_classes_sum_tot'
 
-z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title2  )
-predictions = z['predictions_bg']
-labels = z['labels_bg']
-events = z['events_bg']
+#z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+#q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title  )
+#predictions = z['predictions_bg']
+#labels = z['labels_bg']
+#events = z['events_bg']
 
 def make_list_from_txt(title):
     file_handle = open(title, 'r')
@@ -232,12 +232,12 @@ def positions():
     plt.show()
 
 if __name__ == '__main__':
-#    plot_acc_cost()
+    plot_acc_cost()
 #    histogram(output_distribution, bins=40, domain=(0,1), xlabel='output')
 #    histogram(energie_distribution, bins=100,domain=None, xlabel='energie')
 #    histogram(nhits_distribution, bins=100, domain=(0,200), xlabel='mc hits')
-    
-    histogram(theta_distribution, bins=50, domain=None, xlabel=r'$\cos(\theta)$')
-    histogram(phi_distribution, bins=50, domain=None, xlabel='$\phi$')
-    positions()
+#    
+#    histogram(theta_distribution, bins=50, domain=None, xlabel=r'$\cos(\theta)$')
+#    histogram(phi_distribution, bins=50, domain=None, xlabel='$\phi$')
+#    positions()
 
