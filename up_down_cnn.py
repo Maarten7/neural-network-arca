@@ -82,22 +82,39 @@ for i in range(10):
 
     fc = tf.matmul(fc, wfc1) + bfc1 
     fc = tf.nn.relu(fc)
+    print fc.shape
 
     fc = tf.matmul(fc, wfc2) + bfc2 
     fc = tf.nn.relu(fc)
-    fc = tf.reshape(fc, shape=[-1, 16])
+    print fc.shape
+    fc = tf.reshape(fc, shape=[-1, 1, 16, 1])
+    print fc.shape
     m.append(fc)
+
 c = tf.concat(m, 1)
 
-time_steps = 10
-num_units = 64
-n_input = 10  # *10
-n_classes = 2
+print c
 
-lstm_layer = tf.contrib.rnn.BasicLSTMCell(num_units, forget_bias=1)
-outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=tf.float32)
-prediction = tf.matmul(
-    outputs[-1], weights([num_units, n_classes])) + bias(n_classes)
+wconv2 = weights([4, 16, 1, 7])
+bconv2 = bias(7)
+conv2 = tf.nn.conv2d(input=c, filter=wconv2, strides=[1, 1, 1, 1], padding="VALID") + bconv2
+conv2 = tf.nn.relu(conv2)
+print conv2
+conv2 = tf.nn.max_pool(conv2, ksize=[1, 1, 1, 1], strides=[1, 1, 1, 1], padding="VALID")
+print conv2
+elements = np.prod(conv2._shape_as_list()[1:])
+fc2 = tf.reshape(conv2, [-1, elements]) 
+print fc2
+wfc3 = weights([elements, 16])
+bfc3 = bias(16)
+fc2 = tf.matmul(fc2, wfc3) + bfc3
+fc2 = tf.nn.relu(fc2)
+print fc2
+wfc4 = weights([16, 2])
+bfc4 = bias(2)
+fc2 = tf.matmul(fc2, wfc4) + bfc4
+print fc2
+prediction = tf.nn.sigmoid(fc2)
 print prediction
 
 loss = tf.reduce_mean(
@@ -132,18 +149,19 @@ for i in range(2000):
    
 saver = tf.train.Saver()
 with tf.Session() as sess:
-    try:
-        saver.restore(sess, '/tmp/updownmodel.ckpt')
-    except:
-        sess.run(init)
+    sess.run(init)
+#    try:
+#        saver.restore(sess, '/tmp/updownmodel_cnn.ckpt')
+#    except:
+#        sess.run(init)
 
-    for epoch in range(10000):
+    for epoch in range(1000):
         if epoch % 10 == 0:
             print epoch
         feed_dict = {x: events, y: labels}
         sess.run(opt, feed_dict=feed_dict)
         if epoch % 100 == 0:
-            saver.save(sess, '/tmp/updownmodel.ckpt')
+            saver.save(sess, '/tmp/updownmodel_cnn.ckpt')
             feed_dict = {x: tevents, y: tlabels}
             acc = sess.run(accuracy, feed_dict=feed_dict)
             print acc
