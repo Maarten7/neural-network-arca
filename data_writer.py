@@ -54,10 +54,10 @@ def data_writer(title):
 
 def data_adder(title):
     with h5py.File(title, 'a') as hfile:
-#        for root_file, evt_type in root_files(train=False, test=True):
-#            del hfile[root_file + 'positions']
-#            del hfile[root_file + 'directions']
-            
+        for root_file, evt_type in root_files(train=False, test=True):
+            print root_file
+            del hfile[root_file + 'positions']
+            del hfile[root_file + 'directions']
         for root_file, evt_type in root_files(train=False, test=True):
             print root_file
                 
@@ -73,20 +73,13 @@ def data_adder(title):
                     x, y, z = pos.x, pos.y, pos.z
                     dir = trk.dir
                     dx, dy, dz = dir.x, dir.y, dir.z
-                    positions = np.append(positions, [[x, y, z]], axis=0)
-                    directions = np.append(directions, [[dx, dy, dz]], axis=0)
                 except IndexError:
-                    continue
+                    x, y, z = 0, 0, 0 
+                    dx, dy, dz = 0, 0, 0 
+                positions = np.append(positions, [[x, y, z]], axis=0)
+                directions = np.append(directions, [[dx, dy, dz]], axis=0)
 
             dset = hfile.create_dataset(root_file + 'positions', data=positions)
             dset = hfile.create_dataset(root_file + 'directions', data=directions)
 
 data_adder(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title)
-
-
-
-                
-                
-
-
-

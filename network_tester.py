@@ -19,7 +19,7 @@ title = model.title
 cnn = model.cnn
 
 # Train data
-f = h5py.File(PATH + 'data/hdf5_files/bg_file_sum_tot.hdf5', 'r')
+f = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title, 'r')
 # Write file
 z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'w')
 
@@ -37,8 +37,8 @@ with tf.Session(config=config) as sess:
     ##########################################################################
     print "Testing with bg"
 
-    pred = np.empty((0, 2))
-    labe = np.empty((0, 2))
+    pred = np.empty((0, NUM_CLASSES))
+    labe = np.empty((0, NUM_CLASSES))
     even = np.empty((0, 1, 13, 13, 18))
     for root_file, _ in root_files(train=False, test=True):
         events, labels = f[root_file].value, f[root_file + 'labels'].value

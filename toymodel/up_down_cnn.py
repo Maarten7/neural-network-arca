@@ -149,17 +149,16 @@ for i in range(2000):
    
 saver = tf.train.Saver()
 with tf.Session() as sess:
-    sess.run(init)
-#    try:
-#        saver.restore(sess, '/tmp/updownmodel_cnn.ckpt')
-#    except:
-#        sess.run(init)
+    saver.restore(sess, '/tmp/updownmodel_cnn.ckpt')
 
-    for epoch in range(1000):
+    for epoch in range(1):
         if epoch % 10 == 0:
             print epoch
         feed_dict = {x: events, y: labels}
         sess.run(opt, feed_dict=feed_dict)
+        cc, p = sess.run([c, prediction], feed_dict=feed_dict)
+
+        
         if epoch % 100 == 0:
             saver.save(sess, '/tmp/updownmodel_cnn.ckpt')
             feed_dict = {x: tevents, y: tlabels}
