@@ -2,6 +2,7 @@ import h5py
 import numpy as np
 import importlib
 import sys
+import os
 import importlib
 import matplotlib.pyplot as plt
 import math
@@ -14,8 +15,8 @@ from helper_functions import *
 #model = importlib.import_module(model)
 #title = model.title
 
-#title = 'sum_tot'
-title = 'three_classes_sum_tot'
+title = 'sum_tot'
+#title = 'three_classes_sum_tot'
 
 z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
 q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title  )
@@ -62,9 +63,11 @@ def make_list_from_txt(title):
             continue
     return data   
 
-def hist_fill(list_value, only_extreme_output=False):
+def hist_fill(list_value, only_extreme_output=False, k40=False):
     eg, ef, mg, mf  = [], [], [], []
     high_output, low_output = True, True
+
+    kg, kf = [], []
 
     for i in range(len(predictions)):
         x = list_value[i] 
@@ -78,12 +81,18 @@ def hist_fill(list_value, only_extreme_output=False):
                 eg.append(x) 
             elif typ == 1 and high_output: # muon
                 mg.append(x)
+            elif typ == 2 and high_output: # k40 
+                kg.append(x)
         if not eq[i]: # incorrect prediction
             if typ == 0 and low_output: # electron
                 ef.append(x) 
             elif typ == 1 and low_output: # electron 
                 mf.append(x)
+            elif typ == 2 and high_output: # k40 
+                kf.append(x)
 
+    if k40:
+        return eg, ef, mg, mf, kg, kf
     return eg, ef, mg, mf
 
 def nhits_distribution():
@@ -132,12 +141,23 @@ def phi_distribution():
     return hist_fill(phis) 
 
 def output_distribution():
-    return hist_fill(predictions.value[np.where(labels.value == 1)])
+    return hist_fill(predictions.value[np.where(labels.value == 1)], k40=True)
 
 def histogram(distribution, bins, xlabel, normed, domain=None, i=0): 
-    eg, ef, mg, mf = distribution()
-    fig, (ax1, ax2) = plt.subplots(1,2)
-    for ax, type_good, type_false, stype in [(ax1, eg, ef, 'electron'), (ax2, mg, mf, 'muon')]:    
+    dist = distribution()
+    if len(dist) == 6:
+        eg, ef, mg, mf, kg, kf = dist
+        fig, (ax1, ax2, ax3) = plt.subplots(1,3)
+        plot_list = [(ax3, kg, kf, 'k40')]
+    else:
+        eg, ef, mg, mf = dist
+        fig, (ax1, ax2) = plt.subplots(1,2)
+        plot_list = []
+    plot_list.append((ax1, eg, ef, 'electron'))
+    plot_list.append((ax2, mg, mf, 'muon'))    
+    
+
+    for ax, type_good, type_false, stype in plot_list:    
         ax.hist(type_good, bins=bins, range=domain, normed=normed, label='%s correct' % stype)
         ax.hist(type_false, bins=bins, range=domain, normed=normed, label='%s false' % stype, histtype='step')
         ax.set_title(distribution.__name__ + ' ' + stype)
@@ -147,22 +167,41 @@ def histogram(distribution, bins, xlabel, normed, domain=None, i=0):
     plt.show()
         
 def plot_acc_cost():
+    path = PATH + "data/results/%s/" % title
+    os.system("ls -l " + path + "_cost_train>" + path + "cost_train.txt")
+    os.system("ls -l " + path + "_acc_train>" + path + "acc_train.txt")
+    os.system("ls -l " + path + "_cost_test>" + path + "cost_test.txt")
+    os.system("ls -l " + path + "_acc_test>" + path + "acc_test.txt")
+    
     fig, (ax1, ax2) = plt.subplots(1,2)
-    try:
-        data = make_list_from_txt(PATH + 'data/results/%s/cost.txt' % title)
-        ax1.plot(data)
-    except IOError: 
-        pass
     ax1.set_title('Cost/Loss as fuction of training epochs')
     ax1.set_xlabel('Number of epochs')
-    ax1.set_ylabel('Cross entropy')
+    ax1.set_ylabel('Cross entropy per event')
     try:
-        ax2.plot(make_list_from_txt(PATH + 'data/results/%s/acc.txt' % title))
+        data = make_list_from_txt(PATH + 'data/results/%s/cost_train.txt' % title)
+        ax1.plot(data, label='train')
+    except IOError: 
+        pass
+    try:
+        data = make_list_from_txt(PATH + 'data/results/%s/cost_test.txt' % title)
+        ax1.plot(data, label='test')
+    except IOError: 
+        pass
+    ax1.legend()
+
+    try: 
+        data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % title)
+        ax2.plot(data, label='train')
+    except IOError:
+        pass 
+    try: 
+        data = make_list_from_txt(PATH + 'data/results/%s/acc_test.txt' % title)
+        ax2.plot(data, label='test')
     except IOError:
         pass 
     ax2.set_title('Accuracy on training sets')
     ax2.legend()
-    ax2.set_xlabel('epochs')
+    ax2.set_xlabel('Number of epochs epochs')
     plt.show()
 
 def histogram_n_hits():
@@ -260,12 +299,12 @@ def positions():
 
 if __name__ == '__main__':
     plot_acc_cost()
-#    histogram(output_distribution, bins=40, domain=(0,1), xlabel='output', normed=False)
-#    histogram(energie_distribution, bins=100,domain=None, xlabel='energie', normed=False)
-#    histogram(nhits_distribution, bins=100, domain=(0,200), xlabel='mc hits', normed=False)
-#    
-#    histogram(theta_distribution, bins=50, domain=None, xlabel=r'$\cos(\theta)$', normed=False)
-#    histogram(phi_distribution, bins=50, domain=None, xlabel='$\phi$', normed=False)
-#    plot_confusion_matrix()
+    histogram(output_distribution, bins=40, domain=(0,1), xlabel='output', normed=False)
+    histogram(energie_distribution, bins=100,domain=None, xlabel='$\log(E)$', normed=False)
+    histogram(nhits_distribution, bins=100, domain=(0,200), xlabel='mc hits', normed=False)
+    
+    histogram(theta_distribution, bins=50, domain=None, xlabel=r'$\cos(\theta)$', normed=False)
+    histogram(phi_distribution, bins=50, domain=None, xlabel='$\phi$', normed=False)
+    plot_confusion_matrix()
 #    positions()
-        
+    pass 
