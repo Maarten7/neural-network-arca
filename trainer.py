@@ -46,45 +46,55 @@ with tf.name_scope(title):
     
     saver = tf.train.Saver()
 
-def test(sess):
+def test_model(sess):
     acc = [] 
-    ecc, mcc = 0, 0
-    
+    ecc, mcc, k40 = 0, 0, 0
     
     loss = 0
     for root_file, _ in root_files(train=False, test=True):
         events, labels = f[root_file].value, f[root_file + 'labels'].value
-        num_ecc_events, num_mcc_events =  np.sum(labels, axis=0)
+        num_ecc_events, num_mcc_events, num_k40_events =  np.sum(labels, axis=0)
         ecc += num_ecc_events 
         mcc += num_mcc_events 
+        k40 += num_k40_events
         
         feed_dict = {model.x: events, model.y: labels}
-        p, a, c = sess.run([prediction, accuracy, cost], feed_dict=feed_dict)
+        a, c = sess.run([prediction, accuracy, cost], feed_dict=feed_dict)
         acc.append(a * len(labels))
         loss += c
     
-    acc = sum(np.array(acc)) / float(ecc+mcc)
-    open(PATH + 'data/results/%s/_acc/' % title + timestamp() + str(loss / NUM_TEST_EVENTS), 'w')
-    open(PATH + 'data/results/%s/_cost_test/' % title + timestamp() + str(acc), 'w')
+    acc = sum(np.array(acc)) / float(ecc+mcc+k40)
+    open(PATH + 'data/results/%s/_acc_test/' % title + timestamp() + str(acc), 'w')
+    open(PATH + 'data/results/%s/_cost_test/' % title + timestamp() + str(loss / NUM_TEST_EVENTS), 'w')
     return acc
 
 
-def train(sess, test=True):
+def train_model(sess, test=True):
     print 'Start training'
     for epoch in range(num_epochs):
         print "epoch", epoch, "\tbatch"
+        acc = [] 
+        ecc, mcc, k40 = 0, 0, 0
+
         epoch_loss = 0
-        
         #######################################################################
         for i, (root_file, _) in enumerate(root_files(debug=debug)):
             print '\t', i
             events, labels = f[root_file].value, f[root_file + 'labels'].value
-            _, c = sess.run([optimizer, cost], feed_dict={model.x: events, model.y: labels})
-            epoch_loss += c
+            num_ecc_events, num_mcc_events, num_k40_events =  np.sum(labels, axis=0)
+            ecc += num_ecc_events 
+            mcc += num_mcc_events 
+            k40 += num_k40_events
 
+            _, a, c = sess.run([optimizer, accuracy, cost], feed_dict={model.x: events, model.y: labels})
+            acc.append(a * len(labels))
+            epoch_loss += c
+        
+        acc = sum(np.array(acc)) / float(ecc+mcc+k40)
         print "cost", epoch_loss
-        open(PATH + 'data/results/%s/_cost/' % title + timestamp() + str(epoch_loss / NUM_TRAIN_EVENTS), 'w')
-        if test and epoch % 100 == 0: print 'Accuracy', test(sess)
+        open(PATH + 'data/results/%s/_acc_train/' % title + timestamp() + str(acc), 'w')
+        open(PATH + 'data/results/%s/_cost_train/' % title + timestamp() + str(epoch_loss / NUM_TRAIN_EVENTS), 'w')
+        if test and epoch % 10 == 0: print 'Accuracy', test_model(sess)
         save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
         ########################################################################
     return epoch_loss
@@ -101,7 +111,7 @@ def main():
             print 'Initalize variables'
             sess.run(tf.global_variables_initializer())
         
-        train(sess, test=False)
+        train_model(sess, test=True)
  
 
 

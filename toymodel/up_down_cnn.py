@@ -2,45 +2,6 @@ import numpy as np
 import tensorflow as tf
 import random
 
-
-def down():
-    event = np.zeros((10, 12, 14, 1))
-    i = random.randint(0, 6)
-    j = random.randint(0, 13)
-    k = 0
-    event[k][i][j] = [1]
-
-    while i < 12:
-        k += 1
-        try:
-            i += 1
-            s = random.randint(-1, 1)
-            j += s
-            event[k][i][j] = [.5]
-        except IndexError:
-            break
-    return event, np.array([1,0])
-
-
-def up():
-    event = np.zeros((10, 12, 14, 1))
-    i = random.randint(6, 11)
-    j = random.randint(0, 13)
-    k = 0
-    event[k][i][j] = [1]
-
-    while i > 0:
-        k += 1
-        try:
-            i -= 1
-            s = random.randint(-1, 1)
-            j += s
-            event[k][i][j] = [.5]
-        except IndexError:
-            break
-    return event, np.array([0,1])
-
-
 def weights(shape):
     w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
     return w
@@ -127,26 +88,6 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 init = tf.global_variables_initializer()
 
-events = []
-labels = []
-for i in range(8000):
-    e, l = up()
-    events.append(e)
-    labels.append(l)
-    e, l = down()
-    events.append(e)
-    labels.append(l)
-
-tevents = []
-tlabels = []
-for i in range(2000):
-    e, l = up()
-    tevents.append(e)
-    tlabels.append(l)
-    e, l = down()
-    tevents.append(e)
-    tlabels.append(l)
-   
 saver = tf.train.Saver()
 with tf.Session() as sess:
     saver.restore(sess, '/tmp/updownmodel_cnn.ckpt')
