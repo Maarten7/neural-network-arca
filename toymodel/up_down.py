@@ -61,6 +61,7 @@ lstm_layer = tf.contrib.rnn.BasicLSTMCell(num_units, forget_bias=1)
 outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=tf.float32)
 prediction = tf.matmul(
     outputs[-1], weights([num_units, n_classes])) + bias(n_classes)
+prediction = tf.nn.softmax(prediction)
 print prediction
 
 loss = tf.reduce_mean(
