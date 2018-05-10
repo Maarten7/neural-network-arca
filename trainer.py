@@ -59,7 +59,7 @@ def test_model(sess):
         k40 += num_k40_events
         
         feed_dict = {model.x: events, model.y: labels}
-        a, c = sess.run([prediction, accuracy, cost], feed_dict=feed_dict)
+        p, a, c = sess.run([prediction, accuracy, cost], feed_dict=feed_dict)
         acc.append(a * len(labels))
         loss += c
     

@@ -16,7 +16,7 @@ from helper_functions import *
 #title = model.title
 
 title = 'sum_tot'
-#title = 'three_classes_sum_tot'
+title = 'three_classes_sum_tot'
 
 z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
 q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title  )
@@ -63,106 +63,135 @@ def make_list_from_txt(title):
             continue
     return data   
 
-def hist_fill(list_value, only_extreme_output=False, k40=False):
+def hist_fill(list_value, only_extreme_output=False, k40=False, split_false=False):
     eg, ef, mg, mf  = [], [], [], []
     high_output, low_output = True, True
 
     kg, kf = [], []
 
+    efm, efk = [], []
+    mfe, mfk = [], []
+    kfe, kfm = [], []
     for i in range(len(predictions)):
         x = list_value[i] 
-        typ = ll[i]
-        pr = predictions[i][typ]
+        correct_type = ll[i]
+        predict_type = lt[i]
+        pr = predictions[i][correct_type]
+
         if only_extreme_output: 
             high_output = 0.97 < pr < 1
             low_output = 0. < pr <.03
         if eq[i]: # correct prediciont
-            if typ == 0 and high_output: # electon
+            if correct_type == 0 and high_output: # electon
                 eg.append(x) 
-            elif typ == 1 and high_output: # muon
+            elif correct_type == 1 and high_output: # muon
                 mg.append(x)
-            elif typ == 2 and high_output: # k40 
+            elif correct_type == 2 and high_output: # k40 
                 kg.append(x)
         if not eq[i]: # incorrect prediction
-            if typ == 0 and low_output: # electron
+            if correct_type == 0 and low_output: # electron
                 ef.append(x) 
-            elif typ == 1 and low_output: # electron 
+                if predict_type == 1:
+                    efm.append(x)
+                elif predict_type == 2:
+                    efk.append(x)
+            elif correct_type == 1 and low_output: # electron 
                 mf.append(x)
-            elif typ == 2 and high_output: # k40 
+                if predict_type == 0:
+                    mfe.append(x)
+                elif predict_type == 2:
+                    mfk.append(x)
+            elif correct_type == 2 and high_output: # k40 
                 kf.append(x)
+                if predict_type == 0:
+                    kfe.append(x)
+                elif predict_type == 1:
+                    kfm.append(x)
 
+    if split_false and k40:
+        return eg, efm, efk, mg, mfe, mfk, kg, kfe, kfm
+    if split_false and not k40:
+        return eg, efm, efk, mg, mfe, mfk
     if k40:
         return eg, ef, mg, mf, kg, kf
-    return eg, ef, mg, mf
+    if not k40:
+        return eg, ef, mg, mf
 
-def nhits_distribution():
+def nhits_distribution(split):
     nhits = []
     for root_file, _ in root_files(train=False, test=True):
         nhits.extend(q[root_file + 'n_hits'].value)
-    return hist_fill(nhits)
+    return hist_fill(nhits, split_false=split)
 
-def energie_distribution():
+def energie_distribution(split):
     energies = []
     for root_file, _ in root_files(train=False, test=True):
         energies.extend(np.log(q[root_file + 'E'].value))
 
-    return hist_fill(energies)
+    return hist_fill(energies, split_false=True)
 
-def pos_distribution(i):
-    positions = []
-    for root_file, _ in root_files(train=False, test=True):
-        for pos in q[root_file + 'positions'].value:
-            positions.append(pos[i])
-    return hist_fill(positions)
-
-def dir_distribution(i):
-    directions= []
-    for root_file, _ in root_files(train=False, test=True):
-        for dir in q[root_file + 'directions'].value:
-            directions.append(dir[i])
-    return hist_fill(directions)
-
-def theta_distribution():
+def theta_distribution(split):
     thetas = []
     for root_file, _ in root_files(train=False, test=True):
         for dir in q[root_file + 'directions'].value:
             dx, dy, dz = dir
             theta = np.arctan2(dz, math.sqrt(dx**2 + dy**2)) 
             thetas.append(np.cos(theta))
-    return hist_fill(thetas) 
+    return hist_fill(thetas, split_false=split) 
 
-def phi_distribution():
+def phi_distribution(split):
     phis = []
     for root_file, _ in root_files(train=False, test=True):
         for dir in q[root_file + 'directions'].value:
             dx, dy, dz = dir
             phi = np.arctan2(dy, dx) 
             phis.append(phi) 
-    return hist_fill(phis) 
+    return hist_fill(phis, split_false=split) 
 
-def output_distribution():
-    return hist_fill(predictions.value[np.where(labels.value == 1)], k40=True)
+def output_distribution(split):
+    return hist_fill(predictions.value[np.where(labels.value == 1)], k40=True, split_false=split)
 
-def histogram(distribution, bins, xlabel, normed, domain=None, i=0): 
-    dist = distribution()
-    if len(dist) == 6:
+def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=None): 
+    if not xlabel: xlabel = distribution.__name__.split('_')[0]
+    dist = distribution(split=split)
+    plot_list = []
+    if len(dist) == 6 and not split: 
         eg, ef, mg, mf, kg, kf = dist
         fig, (ax1, ax2, ax3) = plt.subplots(1,3)
-        plot_list = [(ax3, kg, kf, 'k40')]
-    else:
+        plot_list.append((ax3, kf, 'k40 false'))
+        plot_list.append((ax3, kg, 'k40 correct'))
+    if len(dist) == 4 and not split:
         eg, ef, mg, mf = dist
         fig, (ax1, ax2) = plt.subplots(1,2)
-        plot_list = []
-    plot_list.append((ax1, eg, ef, 'electron'))
-    plot_list.append((ax2, mg, mf, 'muon'))    
-    
+        plot_list.append((ax1, ef, 'electron false'))
+        plot_list.append((ax2, mf, 'muon false'))    
 
-    for ax, type_good, type_false, stype in plot_list:    
-        ax.hist(type_good, bins=bins, range=domain, normed=normed, label='%s correct' % stype)
-        ax.hist(type_false, bins=bins, range=domain, normed=normed, label='%s false' % stype, histtype='step')
-        ax.set_title(distribution.__name__ + ' ' + stype)
+    if len(dist) == 9 and split:
+        eg, efm, efk, mg, mfe, mfk, kg, kfe, kfm = dist
+        fig, (ax1, ax2, ax3) = plt.subplots(1,3)
+        plot_list.append((ax3, kfe, 'k40 as electron'))
+        plot_list.append((ax3, kfm, 'k40 as muon'))
+        plot_list.append((ax3, kg,  'k40 correct'))
+        plot_list.append((ax1, efm, 'electron as muon'))
+        plot_list.append((ax1, efk, 'electron as k40'))
+        plot_list.append((ax2, mfe, 'muon as electron'))    
+        plot_list.append((ax2, mfk, 'muon as k40'))    
+    if len(dist) == 6 and split:
+        eg, efm, efk, mg, mfe, mfk = dist
+        fig, (ax1, ax2) = plt.subplots(1,2)
+        plot_list.append((ax1, efm, 'electron as muon'))
+        plot_list.append((ax1, efk, 'electron as k40'))
+        plot_list.append((ax2, mfe, 'muon as electron'))    
+        plot_list.append((ax2, mfk, 'muon as k40'))    
+    plot_list.append((ax1, eg, 'electron correct'))
+    plot_list.append((ax2, mg, 'muon correct'))    
+
+
+    for ax, data, label in reversed(plot_list):    
+        ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
+        ax.set_title(distribution.__name__ + ' ' + label.split()[0])
         ax.set_xlabel(xlabel)
-        ax.set_ylabel('number events')
+        ax.set_ylabel('Number events')
         ax.legend()
     plt.show()
         
@@ -172,98 +201,46 @@ def plot_acc_cost():
     os.system("ls -l " + path + "_acc_train>" + path + "acc_train.txt")
     os.system("ls -l " + path + "_cost_test>" + path + "cost_test.txt")
     os.system("ls -l " + path + "_acc_test>" + path + "acc_test.txt")
-    
+   
+    test_every = 10
+
     fig, (ax1, ax2) = plt.subplots(1,2)
     ax1.set_title('Cost/Loss as fuction of training epochs')
     ax1.set_xlabel('Number of epochs')
     ax1.set_ylabel('Cross entropy per event')
     try:
         data = make_list_from_txt(PATH + 'data/results/%s/cost_train.txt' % title)
+        epochs = len(data)
         ax1.plot(data, label='train')
     except IOError: 
         pass
     try:
         data = make_list_from_txt(PATH + 'data/results/%s/cost_test.txt' % title)
-        ax1.plot(data, label='test')
+        ranger = range(epochs - 10 * len(data), epochs, test_every) 
+        ax1.plot(ranger, data, label='test')
     except IOError: 
         pass
     ax1.legend()
 
     try: 
         data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % title)
-        ax2.plot(data, label='train')
+        ranger = range(epochs - len(data), epochs) 
+        ax2.plot(ranger, data, label='train')
     except IOError:
         pass 
     try: 
         data = make_list_from_txt(PATH + 'data/results/%s/acc_test.txt' % title)
-        ax2.plot(data, label='test')
+        ranger = range(epochs - 10 * len(data), epochs, test_every) 
+        ax2.plot(ranger, data, label='test')
     except IOError:
         pass 
+    ax2.set_xlim([0, epochs])
+    ax2.set_ylim([0, 1])
     ax2.set_title('Accuracy on training sets')
     ax2.legend()
     ax2.set_xlabel('Number of epochs epochs')
     plt.show()
 
-def histogram_n_hits():
-    save_path = PATH + 'data/results/%s/' % title
-    label=['e correct', 'e false', 'm correct', 'm false']
-    eg, ef, mg, mf = result_plot()
-    domain = (0, 500)
-
-    h, b, _ = plt.hist([eg, ef], bins=50, range=domain, label=label[0:2], histtype='bar')
-    h1, h2 = h
-    acc = h1/(h1 + h2)
-    
-    plt.title('Number of hit distribution eCC and eNC')
-    plt.ylabel('number of events')
-    plt.xlabel('number of hits')
-    plt.legend()
-    plt.savefig(save_path + 'hist_e')
-    plt.show()
-    
-    plt.plot(b[1:], acc)
-    plt.title('eCC and eNC accuracy')
-    plt.xlabel('number of hits')
-    plt.ylabel('accuracy')
-    plt.savefig(save_path + 'acc_e')
-    plt.show()
-
-    h, b, _ = plt.hist([mg, mf], bins=50, range=domain, label=label[2:4], histtype='bar')
-    h1, h2 = h
-    acc = h1/(h1 + h2)
-    plt.title('Number of hit distribution muCC')
-    plt.ylabel('number of events')
-    plt.xlabel('number of hits')
-    plt.legend()
-    plt.savefig(save_path + 'hist_mu')
-    plt.show()
-    
-    plt.plot(b[1:], acc)
-    plt.title('muCC accuracy')
-    plt.xlabel('number of hits')
-    plt.ylabel('accuracy')
-    plt.savefig(save_path + 'acc_mu')
-    plt.show()
-    
-    plt.hist([eg, ef, mg, mf], bins=50, range=domain, label=label, histtype='barstacked')
-    plt.title('Number of hit distribution (stacked)')
-    plt.legend()
-    plt.xlabel('number of hits')
-    plt.ylabel('number of events')
-    plt.savefig(save_path + 'hist_all_stacked')
-    plt.show()
-    
-    h, b, _ = plt.hist([eg + mg, ef + mf], bins=50, range=domain, label=label, histtype='bar')
-    h1, h2 = h
-    acc = h1/(h1 + h2)
-    plt.close()
-
-    plt.title('Accuracy')
-    plt.xlabel('number of hits')
-    plt.ylabel('accuracy')
-    plt.plot(b[1:], acc)
-    plt.savefig(save_path + 'Acc_all')
-    plt.show()
 
 def positions():
     positions = []
@@ -299,9 +276,9 @@ def positions():
 
 if __name__ == '__main__':
     plot_acc_cost()
-    histogram(output_distribution, bins=40, domain=(0,1), xlabel='output', normed=False)
-    histogram(energie_distribution, bins=100,domain=None, xlabel='$\log(E)$', normed=False)
-    histogram(nhits_distribution, bins=100, domain=(0,200), xlabel='mc hits', normed=False)
+    histogram(output_distribution, bins=40, domain=(0,1))
+    histogram(energie_distribution, bins=100,domain=None, xlabel='$\log(E)$')
+    histogram(nhits_distribution, bins=100, domain=(0,200))
     
     histogram(theta_distribution, bins=50, domain=None, xlabel=r'$\cos(\theta)$', normed=False)
     histogram(phi_distribution, bins=50, domain=None, xlabel='$\phi$', normed=False)
