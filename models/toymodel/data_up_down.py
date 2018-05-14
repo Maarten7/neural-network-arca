@@ -73,22 +73,22 @@ def show_event():
     ani = animation.ArtistAnimation(fig, ims)
     plt.show()
 
-events = []
-labels = []
-for i in range(8000):
-    e, l = event(down=False)
-    events.append(e)
-    labels.append(l)
-    e, l = event(down=True)
-    events.append(e)
-    labels.append(l)
-
-tevents = []
-tlabels = []
-for i in range(2000):
-    e, l = event(down=False)
-    tevents.append(e)
-    tlabels.append(l)
-    e, l = event(down=True)
-    tevents.append(e)
-    tlabels.append(l)
+#events = []
+#labels = []
+#for i in range(8000):
+#    e, l = event(down=False)
+#    events.append(e)
+#    labels.append(l)
+#    e, l = event(down=True)
+#    events.append(e)
+#    labels.append(l)
+#
+#tevents = []
+#tlabels = []
+#for i in range(2000):
+#    e, l = event(down=False)
+#    tevents.append(e)
+#    tlabels.append(l)
+#    e, l = event(down=True)
+#    tevents.append(e)
+#    tlabels.append(l)

@@ -11,9 +11,9 @@ from sklearn.metrics import confusion_matrix
 import itertools
 from helper_functions import *
 
-#model = sys.argv[1]
-#model = importlib.import_module(model)
-#title = model.title
+model = sys.argv[1]
+model = importlib.import_module(model)
+title = model.title
 
 title = 'sum_tot'
 title = 'three_classes_sum_tot'
@@ -276,13 +276,13 @@ def positions():
     plt.show()
 
 if __name__ == '__main__':
-    plot_acc_cost()
+#    plot_acc_cost()
 #    histogram(output_distribution, bins=40, domain=(0,1))
 #    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
 #    histogram(nhits_distribution, bins=100, domain=(0,200))
 #    
-#    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
+    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
 #    histogram(phi_distribution, bins=50, xlabel='$\phi$')
-    plot_confusion_matrix()
-#    positions()
+#    plot_confusion_matrix()
+    positions()
     pass 
