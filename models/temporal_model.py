@@ -1,11 +1,10 @@
-#!/usr/bin/python -i
-import tensorflow as tf
 from ROOT import *
 import aa
 import numpy as np
+import tensorflow as tf
 from helper_functions import *
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+#import matplotlib.pyplot as plt
+#import matplotlib.animation as animation
 
 title = 'temporal'
 
@@ -136,6 +135,7 @@ class Data_handle(object):
         print dt, num_tbins
         channels = 31 if split_dom else 1
         
+        num_tbins = 140
         event = np.zeros((num_tbins, 13, 13, 18, channels))
 
 
@@ -179,32 +179,31 @@ class Data_handle(object):
         if code == 'K40':
             return np.array([0, 0, 1])
 
-def animate_event(event_full):
-    """Shows 3D plot of evt"""
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    event_full = event_full.reshape((-1,13,13,18))
-
-    ims = []
-    for event in event_full:
-        x, y, z = event.nonzero()
-        k = event[event.nonzero()]
-        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Oranges'))
-        ims.append([sc])
-    ax.set_xlim([0,13])
-    ax.set_ylim([0,13])
-    ax.set_zlim([0,18])
-    ax.set_xlabel('x index')
-    ax.set_ylabel('y index')
-    ax.set_zlabel('z index')
-    plt.title('TTOT on DOM')
-    fig.colorbar(sc)
-    ani = animation.ArtistAnimation(fig, ims)
-    plt.show()
+#def animate_event(event_full):
+#    """Shows 3D plot of evt"""
+#    fig = plt.figure()
+#    ax = fig.add_subplot(111, projection='3d')
+#    event_full = event_full.reshape((-1,13,13,18))
+#
+#    ims = []
+#    for event in event_full:
+#        x, y, z = event.nonzero()
+#        k = event[event.nonzero()]
+#        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Oranges'))
+#        ims.append([sc])
+#    ax.set_xlim([0,13])
+#    ax.set_ylim([0,13])
+#    ax.set_zlim([0,18])
+#    ax.set_xlabel('x index')
+#    ax.set_ylabel('y index')
+#    ax.set_zlabel('z index')
+#    plt.title('TTOT on DOM')
+#    fig.colorbar(sc)
+#    ani = animation.ArtistAnimation(fig, ims)
+#    plt.show()
     
 
 if __name__ == "__main__":
     evt = EVENT
     dh = Data_handle()
     event = dh.make_event(evt.hits, split_dom=False)
-    animate_event(event)
