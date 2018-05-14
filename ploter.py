@@ -239,6 +239,7 @@ def plot_acc_cost():
     ax2.set_title('Accuracy on training sets')
     ax2.legend()
     ax2.set_xlabel('Number of epochs epochs')
+    ax2.set_ylabel('Accuracy')
     plt.show()
 
 
@@ -276,12 +277,12 @@ def positions():
 
 if __name__ == '__main__':
     plot_acc_cost()
-    histogram(output_distribution, bins=40, domain=(0,1))
-    histogram(energie_distribution, bins=100,domain=None, xlabel='$\log(E)$')
-    histogram(nhits_distribution, bins=100, domain=(0,200))
-    
-    histogram(theta_distribution, bins=50, domain=None, xlabel=r'$\cos(\theta)$', normed=False)
-    histogram(phi_distribution, bins=50, domain=None, xlabel='$\phi$', normed=False)
+#    histogram(output_distribution, bins=40, domain=(0,1))
+#    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
+#    histogram(nhits_distribution, bins=100, domain=(0,200))
+#    
+#    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
+#    histogram(phi_distribution, bins=50, xlabel='$\phi$')
     plot_confusion_matrix()
 #    positions()
     pass 

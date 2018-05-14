@@ -1,7 +1,6 @@
-#!/usr/bin/python -i
-import tensorflow as tf
 from ROOT import *
 import aa
+import tensorflow as tf
 import numpy as np
 from helper_functions import *
 
