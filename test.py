@@ -5,7 +5,7 @@ import sys
 import h5py
 import importlib
 from helper_functions import *
-from sklearn.metrics import confusion_matrix
+#from sklearn.metrics import confusion_matrix
 title = 'three_classes_sum_tot'
 
 z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
