@@ -18,11 +18,10 @@ title = model.title
 title = 'sum_tot'
 title = 'three_classes_sum_tot'
 
-z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title  )
-predictions = z['predictions_bg']
-labels = z['labels_bg']
-events = z['events_bg']
+data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+predictions = pred_file['predictions']
 
 ll = np.argmax(labels.value, axis=1)
 lt = np.argmax(predictions.value, axis=1)
@@ -120,20 +119,20 @@ def hist_fill(list_value, only_extreme_output=False, k40=False, split_false=Fals
 def nhits_distribution(split):
     nhits = []
     for root_file, _ in root_files(train=False, test=True):
-        nhits.extend(q[root_file + 'n_hits'].value)
+        nhits.extend(meta_file[root_file + 'n_hits'].value)
     return hist_fill(nhits, split_false=split)
 
 def energie_distribution(split):
     energies = []
     for root_file, _ in root_files(train=False, test=True):
-        energies.extend(np.log(q[root_file + 'E'].value))
+        energies.extend(np.log(meta_file[root_file + 'E'].value))
 
     return hist_fill(energies, split_false=True)
 
 def theta_distribution(split):
     thetas = []
     for root_file, _ in root_files(train=False, test=True):
-        for dir in q[root_file + 'directions'].value:
+        for dir in meta_file[root_file + 'directions'].value:
             dx, dy, dz = dir
             theta = np.arctan2(dz, math.sqrt(dx**2 + dy**2)) 
             thetas.append(np.cos(theta))
@@ -142,7 +141,7 @@ def theta_distribution(split):
 def phi_distribution(split):
     phis = []
     for root_file, _ in root_files(train=False, test=True):
-        for dir in q[root_file + 'directions'].value:
+        for dir in meta_file[root_file + 'directions'].value:
             dx, dy, dz = dir
             phi = np.arctan2(dy, dx) 
             phis.append(phi) 
@@ -246,7 +245,7 @@ def plot_acc_cost():
 def positions():
     positions = []
     for root_file, _ in root_files(train=False, test=True):
-        for pos in q[root_file + 'positions'].value:
+        for pos in meta_file[root_file + 'positions'].value:
             positions.append(pos)
     egx, efx, mgx, mfx = [], [], [], []
     egy, efy, mgy, mfy = [], [], [], []
