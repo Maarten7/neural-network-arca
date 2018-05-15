@@ -9,7 +9,7 @@ import h5py
 import importlib
 from helper_functions import *
 
-model = sys.argv[1]
+model = sys.argv[1].replace('/', '.')[:-3]
 model = importlib.import_module(model)
 title = model.title
 Data_handle = model.Data_handle
@@ -18,22 +18,22 @@ EventFile.read_timeslices = True
 def data_writer(title):
     dh = Data_handle() 
     with h5py.File(title, "w") as hfile:
+        tbins = []
         for root_file, evt_type in root_files(train=True, test=True):
             print root_file 
             f = EventFile(root_file)
-            f.use_tree_index_for_mc_reading = True
+        #    f.use_tree_index_for_mc_reading = True
             
             ####################################################    
-            events = np.empty((0, 140, 13, 13, 18, 31))
-            labels = np.empty((0, 3))
+        #    events = np.empty((0, 140, 13, 13, 18, 31))
+        #    labels = np.empty((0, 3))
             
-            tbins = []
             for evt in f:
                 hits = evt.hits
                 num_tbins = dh.make_event(hits)
                 tbins.append(num_tbins)
         
-        print max(tbins), min(tbins)
+            print max(tbins), min(tbins)
 
 
 #
