@@ -83,5 +83,5 @@ def meta_data_writer(title):
             dset = hfile.create_dataset(root_file + 'directions', data=directions)
             ####################################################
             
-data_writer(title=PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-meta_data_writer(title=PATH + 'data/hdf5_files/meta_data.hdf5' % title)
+#data_writer(title=PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+meta_data_writer(title=PATH + 'data/hdf5_files/meta_data.hdf5')
