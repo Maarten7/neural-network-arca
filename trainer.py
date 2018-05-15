@@ -21,7 +21,7 @@ title = model.title
 # of detector.
 debug = eval(sys.argv[2])
 num_epochs = 1000 if not debug else 2
-f = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title, 'r')
+f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'r')
 #################################################################
 # Neural network.
 # shared weights should be used on all the 13 slices
