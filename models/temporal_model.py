@@ -127,7 +127,7 @@ class Data_handle(object):
         for hit in hits:
             ts.append(hit.t)
        
-        tbin_size = 100
+#        tbin_size = 100
         t0 = min(ts)
         t1 = max(ts)
         dt = t1 - t0 
