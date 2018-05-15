@@ -132,7 +132,7 @@ class Data_handle(object):
         t1 = max(ts)
         dt = t1 - t0 
         num_tbins = np.int(np.ceil(dt / 100))
-        print dt, num_tbins
+        return num_tbins
         channels = 31 if split_dom else 1
         
         num_tbins = 140

@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-PATH = "/user/postm/"
+PATH = "/user/postm/neural-network-arca/"
 LOG_DIR = PATH + "log"
 EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
 NUM_CLASSES = 3
@@ -77,7 +77,7 @@ f = EventFile(rfile)
 f.use_tree_index_for_mc_reading = True
 fi = iter(f)
 EVENT = fi.next()
-   
+print EVENT
 
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
 DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
