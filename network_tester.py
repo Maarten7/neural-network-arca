@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 
 from helper_functions import *
 
-
 model = sys.argv[1] 
 model = importlib.import_module(model)
 x, y = model.x, model.y

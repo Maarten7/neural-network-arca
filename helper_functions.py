@@ -77,7 +77,11 @@ f = EventFile(rfile)
 f.use_tree_index_for_mc_reading = True
 fi = iter(f)
 EVENT = fi.next()
-    
-NUM_TRAIN_EVENTS = 329905
-NUM_TEST_EVENTS = 81914
-NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS 
+   
+
+DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
+DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
+NUM_DEBUG_EVENTS = 55227
+NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
+NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
+NUM_EVENTS = NUM_TRAIN_EVENTS+ NUM_TEST_EVENTS
