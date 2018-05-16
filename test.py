@@ -8,16 +8,11 @@ from helper_functions import *
 #from sklearn.metrics import confusion_matrix
 title = 'three_classes_sum_tot'
 
-z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-q = h5py.File(PATH + 'data/hdf5_files/bg_file_%s.hdf5' % title  )
-predictions = z['predictions_bg']
-labels = z['labels_bg']
-events = z['events_bg']
+f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'a')
 
-ll = np.argmax(labels, axis=1)
-lt = np.argmax(predictions, axis=1)
+for root_file, _ in root_files(train=False, test=True):
+	root_part = root_file.split('/')[-1]	
+	old = '/user/postm/data/root_files/' + root_part
 
-
-
-
-
+	f[root_file + 'labels'] = f[old + 'labels']
+	del f[old + 'labels']

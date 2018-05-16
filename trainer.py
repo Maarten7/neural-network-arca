@@ -13,7 +13,7 @@ import importlib
 from time import time
 from helper_functions import * 
 
-model = sys.argv[1]
+model = sys.argv[1].replace('/', '.')[:-3]
 model = importlib.import_module(model)
 title = model.title
 
@@ -51,6 +51,7 @@ def test_model(sess):
     
     loss = 0
     for root_file, _ in root_files(train=False, test=True):
+	print root_file
         events, labels = f[root_file].value, f[root_file + 'labels'].value
         
         feed_dict = {model.x: events, model.y: labels}
@@ -101,7 +102,6 @@ def main():
         except:
             print 'Initalize variables'
             sess.run(tf.global_variables_initializer())
-        
         train_model(sess, test=True)
  
 

@@ -73,6 +73,7 @@ def num_events(root_file_range):
 EventFile.read_timeslices = True
 rf = root_files()
 rfile, _ = rf.next()
+print rfile
 f = EventFile(rfile)
 f.use_tree_index_for_mc_reading = True
 fi = iter(f)
