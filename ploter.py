@@ -12,17 +12,20 @@ import itertools
 from helper_functions import *
 
 model = sys.argv[1].replace('/', '.')[:-3]
-model = importlib.import_module(model)
-title = model.title
+try:
+	model = importlib.import_module(model)
+	title = getattr(model, "title") 
+except ImportError:
+	title = 'three_classes_sum_tot'
 
-data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
-predictions = pred_file['predictions']
-
-ll = np.argmax(labels.value, axis=1)
-lt = np.argmax(predictions.value, axis=1)
-eq = np.equal(ll, lt)
+#data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+#pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+#meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+#predictions = pred_file['predictions']
+#
+#ll = np.argmax(labels.value, axis=1)
+#lt = np.argmax(predictions.value, axis=1)
+#eq = np.equal(ll, lt)
 
 def plot_confusion_matrix():
     cm = confusion_matrix(ll, lt)
@@ -272,13 +275,13 @@ def positions():
     plt.show()
 
 if __name__ == '__main__':
-#    plot_acc_cost()
+    plot_acc_cost()
 #    histogram(output_distribution, bins=40, domain=(0,1))
 #    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
 #    histogram(nhits_distribution, bins=100, domain=(0,200))
 #    
-    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
+#    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
 #    histogram(phi_distribution, bins=50, xlabel='$\phi$')
 #    plot_confusion_matrix()
-    positions()
+#    positions()
     pass 
