@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 host = socket.gethostname()
 
 PATH = "/user/postm/neural-network-arca/"
-if host is 'rance'
+if host is 'rance':
 	PATH = "/localstore/antares/Maarten_local/neural-network-arca/"
 LOG_DIR = PATH + "log"
 EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
