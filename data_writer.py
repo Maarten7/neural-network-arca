@@ -9,7 +9,7 @@ import h5py
 import importlib
 from helper_functions import *
 
-model = sys.argv[1]
+model = sys.argv[1].replace('/', '.')[:-3]
 model = importlib.import_module(model)
 title = model.title
 Data_handle = model.Data_handle
@@ -18,30 +18,36 @@ EventFile.read_timeslices = True
 def data_writer(title):
     dh = Data_handle() 
     with h5py.File(title, "w") as hfile:
+        tbins = []
         for root_file, evt_type in root_files(train=True, test=True):
             print root_file 
             f = EventFile(root_file)
-            f.use_tree_index_for_mc_reading = True
+        #    f.use_tree_index_for_mc_reading = True
             
             ####################################################    
-            events = np.empty((0, 140, 13, 13, 18, 31))
-            labels = np.empty((0, 3))
+        #    events = np.empty((0, 140, 13, 13, 18, 31))
+        #    labels = np.empty((0, 3))
             
             for evt in f:
                 hits = evt.hits
-                event = dh.make_event(hits)
-                print event.shape
-                try:
-                    label = dh.make_labels(evt_type)
-                except TypeError:
-                    label = dh.make_label(E, dx, dy, dz)
+                num_tbins = dh.make_event(hits)
+                tbins.append(num_tbins)
+        
+            print max(tbins), min(tbins)
 
-                
-                events = np.append(events, [event], axis=0)
-                labels = np.append(labels, [label], axis=0)
-                    
-            dset = hfile.create_dataset(root_file, data=events, dtype='float64')
-            dset = hfile.create_dataset(root_file + "labels", data=labels, dtype='int64')        
+
+#
+#                try:
+#                    label = dh.make_labels(evt_type)
+#                except TypeError:
+#                    label = dh.make_label(E, dx, dy, dz)
+#
+#                
+#                events = np.append(events, [event], axis=0)
+#                labels = np.append(labels, [label], axis=0)
+#                    
+#            dset = hfile.create_dataset(root_file, data=events, dtype='float64')
+#            dset = hfile.create_dataset(root_file + "labels", data=labels, dtype='int64')        
             ####################################################
                 
 
@@ -83,5 +89,5 @@ def meta_data_writer(title):
             dset = hfile.create_dataset(root_file + 'directions', data=directions)
             ####################################################
             
-#data_writer(title=PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-meta_data_writer(title=PATH + 'data/hdf5_files/meta_data.hdf5')
+data_writer(title=PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+#meta_data_writer(title=PATH + 'data/hdf5_files/meta_data.hdf5')

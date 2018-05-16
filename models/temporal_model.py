@@ -127,12 +127,12 @@ class Data_handle(object):
         for hit in hits:
             ts.append(hit.t)
        
-        tbin_size = 100
+#        tbin_size = 100
         t0 = min(ts)
         t1 = max(ts)
         dt = t1 - t0 
         num_tbins = np.int(np.ceil(dt / 100))
-        print dt, num_tbins
+        return num_tbins
         channels = 31 if split_dom else 1
         
         num_tbins = 140
