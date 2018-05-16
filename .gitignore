@@ -1,7 +1,7 @@
 *.pyc
 *.hdf5
+*.root
 *.out
-data
 =======
 # Byte-compiled / optimized / DLL files
 __pycache__/
