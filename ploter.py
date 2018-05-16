@@ -18,14 +18,14 @@ try:
 except ImportError:
 	title = 'three_classes_sum_tot'
 
-#data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-#pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-#meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
-#predictions = pred_file['predictions']
-#
-#ll = np.argmax(labels.value, axis=1)
-#lt = np.argmax(predictions.value, axis=1)
-#eq = np.equal(ll, lt)
+data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+predictions = pred_file['predictions']
+labels = pred_file['labels']
+ll = np.argmax(labels.value, axis=1)
+lt = np.argmax(predictions.value, axis=1)
+eq = np.equal(ll, lt)
 
 def plot_confusion_matrix():
     cm = confusion_matrix(ll, lt)
@@ -187,7 +187,10 @@ def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=N
 
 
     for ax, data, label in reversed(plot_list):    
-        ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
+	if host is 'rance':
+		ax.hist(data, bins=bins, range=domain, normed=normed, label=label, histtype='step')
+	else:
+		ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
         ax.set_title(distribution.__name__ + ' ' + label.split()[0])
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Number events')
@@ -276,7 +279,7 @@ def positions():
 
 if __name__ == '__main__':
     plot_acc_cost()
-#    histogram(output_distribution, bins=40, domain=(0,1))
+    histogram(output_distribution, bins=40, domain=(0,1))
 #    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
 #    histogram(nhits_distribution, bins=100, domain=(0,200))
 #    

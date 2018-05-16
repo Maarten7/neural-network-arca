@@ -16,3 +16,6 @@ for root_file, _ in root_files(train=False, test=True):
 
 	f[root_file + 'labels'] = f[old + 'labels']
 	del f[old + 'labels']
+
+	f[root_file] = f[old]
+	del f[old]

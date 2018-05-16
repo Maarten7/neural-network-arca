@@ -3,11 +3,15 @@ import random
 from ROOT import *
 import aa
 import numpy as np
+import socket
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+host = socket.gethostname()
+
 PATH = "/user/postm/neural-network-arca/"
-PATH = "/localstore/antares/Maarten_local/neural-network-arca/"
+if host is 'rance'
+	PATH = "/localstore/antares/Maarten_local/neural-network-arca/"
 LOG_DIR = PATH + "log"
 EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
 NUM_CLASSES = 3
@@ -71,15 +75,16 @@ def num_events(root_file_range):
             z[evt_type] = len(f)
     return z
 
-#EventFile.read_timeslices = True
-#rf = root_files()
-#rfile, _ = rf.next()
-#print rfile
-#f = EventFile(rfile)
-#f.use_tree_index_for_mc_reading = True
-#fi = iter(f)
-#EVENT = fi.next()
-#print EVENT
+if host is not 'rance':
+	EventFile.read_timeslices = True
+	rf = root_files()
+	rfile, _ = rf.next()
+	print rfile
+	f = EventFile(rfile)
+	f.use_tree_index_for_mc_reading = True
+	fi = iter(f)
+	EVENT = fi.next()
+	print EVENT
 
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
 DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}

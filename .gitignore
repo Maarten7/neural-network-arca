@@ -2,6 +2,7 @@
 *.hdf5
 *.root
 *.out
+test.py
 =======
 # Byte-compiled / optimized / DLL files
 __pycache__/
