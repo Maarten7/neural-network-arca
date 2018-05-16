@@ -11,12 +11,9 @@ from sklearn.metrics import confusion_matrix
 import itertools
 from helper_functions import *
 
-model = sys.argv[1]
+model = sys.argv[1].replace('/', '.')[:-3]
 model = importlib.import_module(model)
 title = model.title
-
-title = 'sum_tot'
-title = 'three_classes_sum_tot'
 
 data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
 pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
