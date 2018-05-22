@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 host = socket.gethostname()
 
 PATH = "/user/postm/neural-network-arca/"
-if host is 'rance':
+if host == 'rance':
 	PATH = "/localstore/antares/Maarten_local/neural-network-arca/"
 LOG_DIR = PATH + "log"
 EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
@@ -75,7 +75,7 @@ def num_events(root_file_range):
             z[evt_type] = len(f)
     return z
 
-if host is not 'rance':
+if host !=  'rance':
 	EventFile.read_timeslices = True
 	rf = root_files()
 	rfile, _ = rf.next()
