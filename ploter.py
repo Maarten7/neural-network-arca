@@ -17,14 +17,14 @@ try:
 except ImportError:
 	title = 'three_classes_sum_tot'
 
-#data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-#pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-#meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
-#predictions = pred_file['predictions']
-#labels = pred_file['labels']
-#ll = np.argmax(labels.value, axis=1)
-#lt = np.argmax(predictions.value, axis=1)
-#eq = np.equal(ll, lt)
+data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+predictions = pred_file['predictions']
+labels = pred_file['labels']
+ll = np.argmax(labels.value, axis=1)
+lt = np.argmax(predictions.value, axis=1)
+eq = np.equal(ll, lt)
 
 #def plot_confusion_matrix():
 #    cm = confusion_matrix(ll, lt)
