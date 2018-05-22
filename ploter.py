@@ -10,6 +10,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import itertools
 from helper_functions import *
 
+from sklearn.metrics import confusion_matrix
+
 model = sys.argv[1].replace('/', '.')[:-3]
 try:
 	model = importlib.import_module(model)
@@ -17,36 +19,36 @@ try:
 except ImportError:
 	title = 'three_classes_sum_tot'
 
-#data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-#pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-#meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
-#predictions = pred_file['predictions']
-#labels = pred_file['labels']
-#ll = np.argmax(labels.value, axis=1)
-#lt = np.argmax(predictions.value, axis=1)
-#eq = np.equal(ll, lt)
+data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+predictions = pred_file['predictions']
+labels = pred_file['labels']
+ll = np.argmax(labels.value, axis=1)
+lt = np.argmax(predictions.value, axis=1)
+eq = np.equal(ll, lt)
 
-#def plot_confusion_matrix():
-#    cm = confusion_matrix(ll, lt)
-#    summ = np.sum(cm, axis=1, dtype=float)
-#    summ = np.column_stack((summ,summ,summ))
-#    cm = cm / summ
-#
-#    plt.imshow(cm, cmap=plt.cm.Blues)
-#    plt.title('normalized confusion matrix')
-#    plt.colorbar()
-#    tick_marks = np.arange(3)
-#
-#    classes = ['shower', 'track', 'K40']
-#    plt.xticks(tick_marks, classes, rotation=45)
-#    plt.yticks(tick_marks, classes)
-#
-#    plt.ylabel('True label')
-#    plt.xlabel('Predicted label')
-#    for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-#        plt.text(j, i, format(cm[i,j], '.3f'), horizontalalignment='center', color='red')
-#
-#    plt.show()
+def plot_confusion_matrix():
+    cm = confusion_matrix(ll, lt)
+    summ = np.sum(cm, axis=1, dtype=float)
+    summ = np.column_stack((summ,summ,summ))
+    cm = cm / summ
+
+    plt.imshow(cm, cmap=plt.cm.Blues)
+    plt.title('normalized confusion matrix')
+    plt.colorbar()
+    tick_marks = np.arange(3)
+
+    classes = ['shower', 'track', 'K40']
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i,j], '.3f'), horizontalalignment='center', color='red')
+
+    plt.show()
 
 
 def make_list_from_txt(title):
@@ -277,13 +279,13 @@ def positions():
     plt.show()
 
 if __name__ == '__main__':
-    plot_acc_cost()
+#    plot_acc_cost()
 #    histogram(output_distribution, bins=40, domain=(0,1))
 #    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
 #    histogram(nhits_distribution, bins=100, domain=(0,200))
 #    
 #    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
 #    histogram(phi_distribution, bins=50, xlabel='$\phi$')
-#    plot_confusion_matrix()
+    plot_confusion_matrix()
 #    positions()
     pass 
