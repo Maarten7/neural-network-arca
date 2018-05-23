@@ -77,10 +77,12 @@ def train_model(sess, test=True):
         for i, (root_file, _) in enumerate(root_files(debug=debug)):
             print '\t', i
             events, labels = f[root_file].value, f[root_file + 'labels'].value
-
-            _, a, c = sess.run([optimizer, accuracy, cost], feed_dict={model.x: events, model.y: labels})
-            acc.append(a * len(labels))
-            epoch_loss += c
+            
+            for j in range(0, len(labels), 100):
+                feed_dict = {model.x: events[i: i + 100], model.y: labels[i: i + 100]} 
+                _, a, c = sess.run([optimizer, accuracy, cost], feed_dict=feed_dict)
+                acc.append(a * len(labels))
+                epoch_loss += c
        
         acc = sum(np.array(acc)) / float(num_events)
         print "cost", epoch_loss

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 from helper_functions import *
 
-model = sys.argv[1] 
+model = sys.argv[1].replace('/', '.')[:-3]
 model = importlib.import_module(model)
 x, y = model.x, model.y
 title = model.title
@@ -37,12 +37,15 @@ with tf.Session(config=config) as sess:
     print "Testing"
 
     pred = np.empty((0, NUM_CLASSES))
+    labe = np.empty((0, NUM_CLASSES))
     for root_file, _ in root_files(train=False, test=True):
         events, labels = f[root_file].value, f[root_file + 'labels'].value
         feed_dict = {x: events, y: labels}
         p = sess.run(prediction, feed_dict=feed_dict)
 
         pred = np.append(pred, p, axis=0)
+        labe = np.append(labe, labels, axis=0)
 
     z.create_dataset('predictions', data=pred)
+    z.create_dataset('labels', data=labe)
     ##########################################################################
