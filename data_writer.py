@@ -23,8 +23,9 @@ def data_writer(title):
             f = EventFile(root_file)
             f.use_tree_index_for_mc_reading = True
             
-            shape = (len(f), 50, 13, 13, 18, 1)
-            dset_e = hfile.create_dataset(root_file, dtype='float64', shape=shape)
+            shape = (len(f), 6,)
+            dt = h5py.special_dtype(vlen=np.dtype('float64'))
+            dset_e = hfile.create_dataset(root_file, dtype=dt, shape=shape)
             shape = (len(f), 3)
             dset_l = hfile.create_dataset(root_file + "labels", dtype='int64', shape=shape)        
             ####################################################    
@@ -79,5 +80,5 @@ def meta_data_writer(title):
             dset = hfile.create_dataset(root_file + 'directions', data=directions)
             ####################################################
             
-data_writer(title=PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+data_writer(title=PATH + 'data/hdf5_files/events_and_labels2_%s.hdf5' % title)
 #meta_data_writer(title=PATH + 'data/hdf5_files/meta_data.hdf5')

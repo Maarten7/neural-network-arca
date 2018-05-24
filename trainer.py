@@ -21,6 +21,8 @@ title = model.title
 # of detector.
 debug = eval(sys.argv[2])
 num_epochs = 1000 if not debug else 2
+num_events = NUM_DEBUG_EVENTS if debug else NUM_TRAIN_EVENTS
+
 f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'r')
 #################################################################
 # Neural network.
@@ -47,6 +49,8 @@ with tf.name_scope(title):
     saver = tf.train.Saver()
 
 def test_model(sess):
+    """ test model on test data set
+        input sess: a tensor flow session"""
     acc = [] 
     
     loss = 0
@@ -60,12 +64,26 @@ def test_model(sess):
         loss += c
     
     acc = sum(np.array(acc)) / float(NUM_TEST_EVENTS)
-    open(PATH + 'data/results/%s/_acc_test/' % title + timestamp() + str(acc), 'w')
-    open(PATH + 'data/results/%s/_cost_test/' % title + timestamp() + str(loss / NUM_TEST_EVENTS), 'w')
+    save_output(acc, c, test=True)
     return acc
 
+def save_output(acc, cost, test=False):
+    """ writes accuracy and cost to file
+        input acc, accuracy value to write to file
+        input cost, cost value to write to file
+        input test, boolean default False, if true the acc and cost are of the 
+            test set"""
+    mode = 'test' if test else 'train'
+    with open(PATH + 'data/results/%s/acc_%s.txt' % (title, mode), 'a') as f:
+        f.write(str(acc) + '\n')
+    with open(PATH + 'data/results/%s/cost_%s.txt' % (title, mode), 'a') as f:
+        f.write(str(epoch_loss / num_events) + '\n')
 
 def train_model(sess, test=True):
+    """ trains model,
+        input sess, a tensorflow session.
+        input test, boolean, default True, if True the accuracy and cost
+                    of test set are calculated"""
     print 'Start training'
     num_events = NUM_DEBUG_EVENTS if debug else NUM_TRAIN_EVENTS
     for epoch in range(num_epochs):
@@ -86,8 +104,10 @@ def train_model(sess, test=True):
        
         acc = sum(np.array(acc)) / float(num_events)
         print "cost", epoch_loss
-        open(PATH + 'data/results/%s/_acc_train/' % title + timestamp() + str(acc), 'w')
-        open(PATH + 'data/results/%s/_cost_train/' % title + timestamp() + str(epoch_loss / num_events), 'w')
+
+
+        save_output(acc, cost)
+
         if test and epoch % 10 == 0: print 'Accuracy', test_model(sess)
         save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
         ########################################################################

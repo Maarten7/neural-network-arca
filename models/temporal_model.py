@@ -1,7 +1,7 @@
 from ROOT import *
 import aa
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
 from helper_functions import *
 #import matplotlib.pyplot as plt
 #import matplotlib.animation as animation
@@ -11,78 +11,78 @@ title = 'temporal'
 EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
 NUM_CLASSES = 3
 
-def conv3d(x, W):
-    return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
-
-def maxpool3d(x):
-    # size of window         movement of window as you slide about
-    return tf.nn.max_pool3d(x, 
-        ksize=[1, 2, 2, 2, 1],
-        strides=[1, 2, 2, 2, 1],
-        padding='SAME')
-
-def weight(shape):
-    w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
-    return w
-
-def bias(shape):
-    b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
-    return b
-
-def print_tensor(x):
-    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
-
-x = tf.placeholder(tf.float32, [None, None, 13, 13, 18, 31], name="X_placeholder")
-y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
-
-def cnn(x):
-
-    nodes =   {"l1": 60,
-               "l2": 35,
-               "l3": 100,
-               "l4": 40,
-               "l5": 20} 
-               
-    weights = {"l1": weight([4, 4, 4, 31, nodes["l1"]]),
-               "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
-               "l3": weight([elements, nodes["l3"]]),
-               "l4": weight([nodes["l3"], nodes["l4"]])}
-
-    biases =  {"l1": bias(nodes["l1"]),
-               "l2": bias(nodes["l2"]),
-               "l3": bias(nodes["l3"]),
-               "l4": bias(nodes["l4"])}
-    
-    print_tensor(x)
-    out_time_bin = []
-    for i in range(time_bins):
-        input = x[:,i,:,:,:,:] 
-        conv1 = tf.nn.relu(
-            conv3d(input, weights["l1"]) + biases["l1"])
-
-        conv2 = tf.nn.relu(
-            conv3d(conv1, weights["l2"]) + biases["l2"])
-
-        conv2 = maxpool3d(conv2)
-    
-        elements = np.prod(conv2._shape_as_list()[1:])
-        fc = tf.reshape(conv2, [-1, elements])
-        
-        fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights["l3"]) + biases["l3"])
-
-        fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights["l4"]) + biases["l4"])
-
-        out_time_bin.append(fc)
-
-    c = tf.concat(out_time_bin, 1)
-    
-    lstm_layer = tf.contrib.rnn.BasisLSTMCell(nodes["l5"], forget_bias=1)
-    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=float64)
-    prediction = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
-    prediction = tf.nn.softmax(prediction)
-    return prediction        
+#def conv3d(x, W):
+#    return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
+#
+#def maxpool3d(x):
+#    # size of window         movement of window as you slide about
+#    return tf.nn.max_pool3d(x, 
+#        ksize=[1, 2, 2, 2, 1],
+#        strides=[1, 2, 2, 2, 1],
+#        padding='SAME')
+#
+#def weight(shape):
+#    w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
+#    return w
+#
+#def bias(shape):
+#    b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
+#    return b
+#
+#def print_tensor(x):
+#    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
+#
+#x = tf.placeholder(tf.float32, [None, None, 13, 13, 18, 31], name="X_placeholder")
+#y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
+#
+#def cnn(x):
+#
+#    nodes =   {"l1": 60,
+#               "l2": 35,
+#               "l3": 100,
+#               "l4": 40,
+#               "l5": 20} 
+#               
+#    weights = {"l1": weight([4, 4, 4, 31, nodes["l1"]]),
+#               "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
+#               "l3": weight([elements, nodes["l3"]]),
+#               "l4": weight([nodes["l3"], nodes["l4"]])}
+#
+#    biases =  {"l1": bias(nodes["l1"]),
+#               "l2": bias(nodes["l2"]),
+#               "l3": bias(nodes["l3"]),
+#               "l4": bias(nodes["l4"])}
+#    
+#    print_tensor(x)
+#    out_time_bin = []
+#    for i in range(time_bins):
+#        input = x[:,i,:,:,:,:] 
+#        conv1 = tf.nn.relu(
+#            conv3d(input, weights["l1"]) + biases["l1"])
+#
+#        conv2 = tf.nn.relu(
+#            conv3d(conv1, weights["l2"]) + biases["l2"])
+#
+#        conv2 = maxpool3d(conv2)
+#    
+#        elements = np.prod(conv2._shape_as_list()[1:])
+#        fc = tf.reshape(conv2, [-1, elements])
+#        
+#        fc = tf.nn.sigmoid(
+#            tf.matmul(fc, weights["l3"]) + biases["l3"])
+#
+#        fc = tf.nn.sigmoid(
+#            tf.matmul(fc, weights["l4"]) + biases["l4"])
+#
+#        out_time_bin.append(fc)
+#
+#    c = tf.concat(out_time_bin, 1)
+#    
+#    lstm_layer = tf.contrib.rnn.BasisLSTMCell(nodes["l5"], forget_bias=1)
+#    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=float64)
+#    prediction = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+#    prediction = tf.nn.softmax(prediction)
+#    return prediction        
 
 class Data_handle(object):
     def __init__(self, norm=100):
@@ -127,12 +127,11 @@ class Data_handle(object):
         for hit in hits:
             ts.append(hit.t)
        
-#        tbin_size = 100
+        tbin_size = 100
         t0 = min(ts)
         t1 = max(ts)
         dt = t1 - t0 
         num_tbins = np.int(np.ceil(dt / 100))
-        return num_tbins
         channels = 31 if split_dom else 1
         
         num_tbins = 140
@@ -156,7 +155,8 @@ class Data_handle(object):
             y, x = self.line_to_index(dom.line_id)
 
             event[t_index, x, y, z, channel_id] += tot / self.NORM_FACTOR 
-        return event
+        non = event.nonzero()    
+        return np.append(np.array(non), [event[non]], axis=0)
 
     def add_hit_to_event(self, event, hit):
         tot = hit.tot
@@ -206,4 +206,4 @@ class Data_handle(object):
 if __name__ == "__main__":
     evt = EVENT
     dh = Data_handle()
-    event = dh.make_event(evt.hits, split_dom=False)
+    event = dh.make_event(evt.hits, split_dom=True)
