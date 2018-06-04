@@ -35,7 +35,7 @@ with tf.name_scope(title):
     with tf.name_scope("Model"):
         prediction = model.cnn(model.x)
     with tf.name_scope("Xentropy"):
-        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=model.y))
+        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=model.y))
     # Train network with AdamOptimizer
     with tf.name_scope("Train"):
         optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)

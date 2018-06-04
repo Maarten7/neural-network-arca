@@ -68,7 +68,7 @@ def cnn(x):
             tf.matmul(fc, weights([1028, 60])) + bias(60))
         print 'fc l2\t\t', fc.shape
         labels = 3
-        output = tf.nn.softmax(tf.matmul(fc, weights([60, labels])) + bias(labels))
+        output = tf.matmul(fc, weights([60, labels])) + bias(labels)
         print 'output\t\t', output.shape
     return output
 
