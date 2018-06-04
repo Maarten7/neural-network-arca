@@ -151,4 +151,7 @@ EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
 NUM_CLASSES = 3
 
 if __name__ == "__main__":
-    cnn(x)
+    dh = Data_handle()
+    evt = dh.make_event(EVENT.hits)
+
+    show_event3d(evt)

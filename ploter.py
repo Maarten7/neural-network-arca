@@ -11,7 +11,8 @@ import itertools
 from helper_functions import *
 
 from sklearn.metrics import confusion_matrix
-
+import matplotlib
+matplotlib.rcParams.update({'font.size': 22})
 model = sys.argv[1].replace('/', '.')[:-3]
 try:
 	model = importlib.import_module(model)
@@ -19,11 +20,13 @@ try:
 except ImportError:
 	title = 'three_classes_sum_tot'
 
-data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+data_file = h5py.File(PATH_RANCE + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+pred_file = h5py.File(PATH_RANCE + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+meta_file = h5py.File(PATH_RANCE + 'data/hdf5_files/meta_data.hdf5')
+
 predictions = pred_file['predictions']
 labels = pred_file['labels']
+
 ll = np.argmax(labels.value, axis=1)
 lt = np.argmax(predictions.value, axis=1)
 eq = np.equal(ll, lt)
@@ -188,7 +191,7 @@ def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=N
 
 
     for ax, data, label in reversed(plot_list):    
-	if host is 'rance':
+	if host == 'rance':
 		ax.hist(data, bins=bins, range=domain, normed=normed, label=label, histtype='step')
 	else:
 		ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
@@ -283,7 +286,7 @@ if __name__ == '__main__':
 #    histogram(output_distribution, bins=40, domain=(0,1))
 #    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
 #    histogram(nhits_distribution, bins=100, domain=(0,200))
-#    
+##    
 #    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
 #    histogram(phi_distribution, bins=50, xlabel='$\phi$')
     plot_confusion_matrix()

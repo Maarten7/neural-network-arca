@@ -18,9 +18,9 @@ try:
 except ImportError:
 	title = 'three_classes_sum_tot'
 
-data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+data_file = h5py.File(PATH_RANCE + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+pred_file = h5py.File(PATH_RANCE + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+meta_file = h5py.File(PATH_RANCE + 'data/hdf5_files/meta_data.hdf5')
 predictions = pred_file['predictions']
 labels = pred_file['labels']
 ll = np.argmax(labels.value, axis=1)
@@ -28,7 +28,7 @@ lt = np.argmax(predictions.value, axis=1)
 eq = np.equal(ll, lt)
 
 def energy_spectrum(bins, code):
-    with h5py.File(PATH + 'data/hdf5_files/spectrums.hdf5', 'w') as f:
+    with h5py.File(PATH_RANCE + 'data/hdf5_files/spectrums.hdf5', 'w') as f:
         spectrum = []
         spectrum_e = []
         spectrum_m = []
@@ -36,19 +36,22 @@ def energy_spectrum(bins, code):
         for root_file, evt_type in root_files(train=False, test=True):
 
             data = meta_file[root_file + code].value
-            energies.extend(data)
+            spectrum.extend(data)
             if evt_type == 'eCC' or evt_type == 'eNC':
-                energies_e.extend(data)
+                spectrum_e.extend(data)
             if evt_type == 'muCC':
-                energies_m.extend(data)
+                spectrum_m.extend(data)
         
-        lambda func x, y: np.log(x)
+        def func(x):
+            x = np.log10(x)
+            x[np.where(x==np.float('-inf'))] = 0
+            return x
 
-        hist, bins = np.histogram(func(spectrum, code), bins=bins) 
+        hist, bins = np.histogram(func(spectrum), bins=bins) 
         f.create_dataset('energy', data=hist) 
-        hist, bins = np.histogram(func(spectrum_e, code), bins=bins) 
+        hist, bins = np.histogram(func(spectrum_e), bins=bins) 
         f.create_dataset('energy_e', data=hist) 
-        hist, bins = np.histogram(func(spectrum_m, code), bins=bins) 
+        hist, bins = np.histogram(func(spectrum_m), bins=bins) 
         f.create_dataset('energy_m', data=hist)
 
 def hist_fill(list_value, only_extreme_output=False, k40=False, split_false=False):
@@ -115,9 +118,10 @@ def energy_distribution(split):
 def histogram(distribution, spectrum, bins, split=True, xlabel = '', normed=False, domain=None): 
     if not xlabel: xlabel = distribution.__name__.split('_')[0]
     dist = distribution(split=split)
-    en_e, en_m = spectrum(bins=bins) 
-    he, _ = en_e   
-    hm, _ = en_m   
+    spectrum(bins=bins, code='E') 
+    f = h5py.File(PATH_RANCE + "data/hdf5_files/spectrums.hdf5", 'r')
+    he = f["energy_e"].value  
+    hm = f["energy_m"].value   
 
     plot_list = []
     if len(dist) == 6 and not split: 

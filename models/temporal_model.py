@@ -134,7 +134,7 @@ class Data_handle(object):
         num_tbins = np.int(np.ceil(dt / 100))
         channels = 31 if split_dom else 1
         
-        num_tbins = 140
+        num_tbins = 200 
         event = np.zeros((num_tbins, 13, 13, 18, channels))
 
 
@@ -156,7 +156,8 @@ class Data_handle(object):
 
             event[t_index, x, y, z, channel_id] += tot / self.NORM_FACTOR 
         non = event.nonzero()    
-        return np.append(np.array(non), [event[non]], axis=0)
+        return event[non], np.array(non)
+        #return np.append(np.array(non), [event[non]], axis=0)
 
     def add_hit_to_event(self, event, hit):
         tot = hit.tot
