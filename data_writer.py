@@ -18,27 +18,34 @@ EventFile.read_timeslices = True
 def data_writer(title):
     dh = Data_handle() 
     with h5py.File(title, "a") as hfile:
-        for root_file, evt_type in root_files(train=True, test=True):
+        dtf = h5py.special_dtype(vlen=np.dtype('float64'))
+        dti = h5py.special_dtype(vlen=np.dtype('int'))
+        for root_file, evt_type in root_files(debug=True):
             print root_file 
             f = EventFile(root_file)
             f.use_tree_index_for_mc_reading = True
             
-            shape = (len(f), 6,)
-            dt = h5py.special_dtype(vlen=np.dtype('float64'))
-            dset_e = hfile.create_dataset(root_file, dtype=dt, shape=shape)
-            shape = (len(f), 3)
+            shape = (500, 1,)
+            dset_t = hfile.create_dataset(root_file + 'tots', dtype=dtf, shape=shape)
+            shape = (500, 5,)
+            dset_b = hfile.create_dataset(root_file + 'bins', dtype=dti, shape=shape)
+            shape = (500, 3)
             dset_l = hfile.create_dataset(root_file + "labels", dtype='int64', shape=shape)        
             ####################################################    
             
             for i, evt in enumerate(f):
-                event = dh.make_event(evt.hits)
+                print i , "#######"
+                tots, bins = dh.make_event(evt.hits, split_dom=True)
                 try:
                     label = dh.make_labels(evt_type)
                 except TypeError:
                     label = dh.make_label(E, dx, dy, dz)
+                dset_t[i] = tots 
+                dset_b[i] = bins 
+                dset_l[i] = label 
 
-            dset_e[i] = event     
-            dset_l[i] = label 
+                if i == 499:
+                   break 
             ####################################################
                 
 
