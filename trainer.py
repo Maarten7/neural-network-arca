@@ -1,6 +1,5 @@
 ###################################
 # Maarten Post
-# Slice detector
 ###################################
 """ This neural network should take the detector slices and with shared weights
 map them to an array or matrix and than this one goes to the output"""
@@ -21,21 +20,19 @@ title = model.title
 # of detector.
 debug = eval(sys.argv[2])
 num_epochs = 1000 if not debug else 2
+num_events = NUM_DEBUG_EVENTS if debug else NUM_TRAIN_EVENTS
+
 f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'r')
-#################################################################
-# Neural network.
-# shared weights should be used on all the 13 slices
-# and create 13 (scalars or vectors) to get vector or matrix
-# here another CNN will go over and then fully connected
 #################################################################
 
 # Loss & Training
 # Compute cross entropy as loss function
 with tf.name_scope(title):
     with tf.name_scope("Model"):
-        prediction = model.cnn(model.x)
+        output = model.cnn(model.x)
+        prediction = tf.nn.softmax(output)
     with tf.name_scope("Xentropy"):
-        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=model.y))
+        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=model.y))
     # Train network with AdamOptimizer
     with tf.name_scope("Train"):
         optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
@@ -46,49 +43,60 @@ with tf.name_scope(title):
     
     saver = tf.train.Saver()
 
-def test_model(sess):
-    acc = [] 
+def save_output(acc, cost, test=False):
     
-    loss = 0
+    mode = 'test' if test else 'train'
+    if test:
+        ne = NUM_TEST_EVENTS
+    else:
+        ne = num_events
+
+    acc = acc / float(ne)
+    cost_per_event = cost / float(ne)
+
+    print '%s acc: %f, cost: %f' % (mode, acc, cost_per_event) 
+    with open(PATH + 'data/results/%s/acc_%s.txt' % (title, mode), 'a') as f:
+        f.write(str(acc) + '\n')
+    with open(PATH + 'data/results/%s/cost_%s.txt' % (title, mode), 'a') as f:
+        f.write(str(cost_per_event) + '\n')
+
+
+def test_model(sess):
+    print 'Start testing \n\t'
+    acc = 0  
+    epoch_loss = 0
+
     for root_file, _ in root_files(train=False, test=True):
-	print root_file
         events, labels = f[root_file].value, f[root_file + 'labels'].value
         
         feed_dict = {model.x: events, model.y: labels}
-        p, a, c = sess.run([prediction, accuracy, cost], feed_dict=feed_dict)
-        acc.append(a * len(labels))
-        loss += c
-    
-    acc = sum(np.array(acc)) / float(NUM_TEST_EVENTS)
-    open(PATH + 'data/results/%s/_acc_test/' % title + timestamp() + str(acc), 'w')
-    open(PATH + 'data/results/%s/_cost_test/' % title + timestamp() + str(loss / NUM_TEST_EVENTS), 'w')
+        a, c = sess.run([accuracy, cost], feed_dict=feed_dict)
+        epoch_loss += c
+        acc += a * len(labels) 
+   
+    save_output(acc, epoch_loss, test=True)
     return acc
 
 
 def train_model(sess, test=True):
     print 'Start training'
-    num_events = NUM_DEBUG_EVENTS if debug else NUM_TRAIN_EVENTS
     for epoch in range(num_epochs):
         print "epoch", epoch, "\tbatch"
-        acc = [] 
-
+        acc = 0 
         epoch_loss = 0
+
         #######################################################################
         for i, (root_file, _) in enumerate(root_files(debug=debug)):
-            print '\t', i
             events, labels = f[root_file].value, f[root_file + 'labels'].value
             
-            for j in range(0, len(labels), 100):
-                feed_dict = {model.x: events[i: i + 100], model.y: labels[i: i + 100]} 
-                _, a, c = sess.run([optimizer, accuracy, cost], feed_dict=feed_dict)
-                acc.append(a * len(labels))
-                epoch_loss += c
+            feed_dict = {model.x: events, model.y: labels} 
+            _, a, c = sess.run([optimizer, accuracy, cost], feed_dict=feed_dict)
+
+            epoch_loss += c
+            acc += a * len(labels)
        
-        acc = sum(np.array(acc)) / float(num_events)
-        print "cost", epoch_loss
-        open(PATH + 'data/results/%s/_acc_train/' % title + timestamp() + str(acc), 'w')
-        open(PATH + 'data/results/%s/_cost_train/' % title + timestamp() + str(epoch_loss / num_events), 'w')
-        if test and epoch % 10 == 0: print 'Accuracy', test_model(sess)
+        save_output(acc, epoch_loss)
+        if test and epoch % 10 == 0: test_model(sess)
         save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
         ########################################################################
     return epoch_loss

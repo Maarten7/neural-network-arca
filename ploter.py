@@ -19,14 +19,14 @@ try:
 except ImportError:
 	title = 'three_classes_sum_tot'
 
-data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
-predictions = pred_file['predictions']
-labels = pred_file['labels']
-ll = np.argmax(labels.value, axis=1)
-lt = np.argmax(predictions.value, axis=1)
-eq = np.equal(ll, lt)
+#data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+#pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+#meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+#predictions = pred_file['predictions']
+#labels = pred_file['labels']
+#ll = np.argmax(labels.value, axis=1)
+#lt = np.argmax(predictions.value, axis=1)
+#eq = np.equal(ll, lt)
 
 def plot_confusion_matrix():
     cm = confusion_matrix(ll, lt)
@@ -228,7 +228,7 @@ def plot_acc_cost():
     try: 
         data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % title)
         ranger = range(epochs - len(data), epochs) 
-        ax2.plot(ranger, data, label='train')
+        ax2.plot(data, label='train')
     except IOError:
         pass 
     try: 

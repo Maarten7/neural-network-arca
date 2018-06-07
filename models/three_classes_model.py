@@ -41,7 +41,7 @@ def cnn(x):
         print 'conv1 mxpl\t', conv1.shape
 
     with tf.name_scope("Conv2"):
-        num_layers_2 = 60
+        num_layers_2 = 25 
         conv2 = tf.nn.relu(
             conv3d(conv1, weights([3, 3, 3, num_layers_1, num_layers_2])) + bias(num_layers_2))
         print 'conv2\t\t', conv2.shape
@@ -61,14 +61,14 @@ def cnn(x):
     print 'fc\t\t', fc.shape
     with tf.name_scope("FullyC1"):
         fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights([elements, 1028])) + bias(1028))
+            tf.matmul(fc, weights([elements, 128])) + bias(128))
     print 'fc l1\t\t', fc.shape
     with tf.name_scope("FullyC2"):
         fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights([1028, 60])) + bias(60))
+            tf.matmul(fc, weights([128, 16])) + bias(16))
         print 'fc l2\t\t', fc.shape
         labels = 3
-        output = tf.matmul(fc, weights([60, labels])) + bias(labels)
+        output = tf.matmul(fc, weights([16, labels])) + bias(labels)
         print 'output\t\t', output.shape
     return output
 
