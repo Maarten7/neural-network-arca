@@ -152,3 +152,16 @@ NUM_CLASSES = 3
 
 if __name__ == "__main__":
     cnn(x)
+#    dh = Data_handle()
+#    ecc1e = dh.make_event(ecc1.hits)
+#    mcc1e = dh.make_event(mcc1.hits)
+#    k401e = dh.make_event(k401.hits)
+#    
+#    #show_event_pos(EVENT.hits)
+#    show_event(ecc1e[0])
+#    show_event(mcc1e[0])
+#    show_event(k401e[0])
+
+    #show_event(ecc2e[0])
+    #show_event(mcc2e[0])
+    #show_event(k402e[0])

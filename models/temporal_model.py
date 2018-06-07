@@ -1,88 +1,88 @@
 from ROOT import *
 import aa
 import numpy as np
-#import tensorflow as tf
+import tensorflow as tf
 from helper_functions import *
-#import matplotlib.pyplot as plt
-#import matplotlib.animation as animation
-
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import matplotlib
+import h5py
 title = 'temporal'
 
 EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
 NUM_CLASSES = 3
 
-#def conv3d(x, W):
-#    return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
-#
-#def maxpool3d(x):
-#    # size of window         movement of window as you slide about
-#    return tf.nn.max_pool3d(x, 
-#        ksize=[1, 2, 2, 2, 1],
-#        strides=[1, 2, 2, 2, 1],
-#        padding='SAME')
-#
-#def weight(shape):
-#    w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
-#    return w
-#
-#def bias(shape):
-#    b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
-#    return b
-#
-#def print_tensor(x):
-#    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
-#
-#x = tf.placeholder(tf.float32, [None, None, 13, 13, 18, 31], name="X_placeholder")
-#y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
-#
-#def cnn(x):
-#
-#    nodes =   {"l1": 60,
-#               "l2": 35,
-#               "l3": 100,
-#               "l4": 40,
-#               "l5": 20} 
-#               
-#    weights = {"l1": weight([4, 4, 4, 31, nodes["l1"]]),
-#               "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
-#               "l3": weight([elements, nodes["l3"]]),
-#               "l4": weight([nodes["l3"], nodes["l4"]])}
-#
-#    biases =  {"l1": bias(nodes["l1"]),
-#               "l2": bias(nodes["l2"]),
-#               "l3": bias(nodes["l3"]),
-#               "l4": bias(nodes["l4"])}
-#    
-#    print_tensor(x)
-#    out_time_bin = []
-#    for i in range(time_bins):
-#        input = x[:,i,:,:,:,:] 
-#        conv1 = tf.nn.relu(
-#            conv3d(input, weights["l1"]) + biases["l1"])
-#
-#        conv2 = tf.nn.relu(
-#            conv3d(conv1, weights["l2"]) + biases["l2"])
-#
-#        conv2 = maxpool3d(conv2)
-#    
-#        elements = np.prod(conv2._shape_as_list()[1:])
-#        fc = tf.reshape(conv2, [-1, elements])
-#        
-#        fc = tf.nn.sigmoid(
-#            tf.matmul(fc, weights["l3"]) + biases["l3"])
-#
-#        fc = tf.nn.sigmoid(
-#            tf.matmul(fc, weights["l4"]) + biases["l4"])
-#
-#        out_time_bin.append(fc)
-#
-#    c = tf.concat(out_time_bin, 1)
-#    
-#    lstm_layer = tf.contrib.rnn.BasisLSTMCell(nodes["l5"], forget_bias=1)
-#    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=float64)
-#    prediction = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
-#    prediction = tf.nn.softmax(prediction)
-#    return prediction        
+def conv3d(x, W):
+    return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
+
+def maxpool3d(x):
+    # size of window         movement of window as you slide about
+    return tf.nn.max_pool3d(x, 
+        ksize=[1, 2, 2, 2, 1],
+        strides=[1, 2, 2, 2, 1],
+        padding='SAME')
+
+def weight(shape):
+    w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
+    return w
+
+def bias(shape):
+    b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
+    return b
+
+def print_tensor(x):
+    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
+
+x = tf.placeholder(tf.float32, [None, 50, 13, 13, 18, 3], name="X_placeholder")
+y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
+
+nodes =   {"l1": 25,
+           "l2": 35,
+           "l3": 80,
+           "l4": 40,
+           "l5": 3} 
+           
+weights = {"l1": weight([4, 4, 4, 3, nodes["l1"]]),
+           "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
+           "l3": weight([15435, nodes["l3"]]),
+           "l4": weight([nodes["l3"], nodes["l4"]])}
+
+biases =  {"l1": bias(nodes["l1"]),
+           "l2": bias(nodes["l2"]),
+           "l3": bias(nodes["l3"]),
+           "l4": bias(nodes["l4"])}
+
+def cnn(x):
+    print_tensor(x)
+    out_time_bin = []
+    time_bins = 50
+    for i in range(time_bins):
+        input = x[:,i,:,:,:,:] 
+        conv1 = tf.nn.relu(
+            conv3d(input, weights["l1"]) + biases["l1"])
+
+        conv2 = tf.nn.relu(
+            conv3d(conv1, weights["l2"]) + biases["l2"])
+
+        conv2 = maxpool3d(conv2)
+
+        elements = np.prod(conv2._shape_as_list()[1:])
+
+        fc = tf.reshape(conv2, [-1, elements])
+        
+        fc = tf.nn.sigmoid(
+            tf.matmul(fc, weights["l3"]) + biases["l3"])
+
+        fc = tf.nn.sigmoid(
+            tf.matmul(fc, weights["l4"]) + biases["l4"])
+
+        out_time_bin.append(fc)
+
+    c = tf.concat(out_time_bin, 1)
+    lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1)
+    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=tf.float32)
+    prediction = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+    return prediction
 
 class Data_handle(object):
     def __init__(self, norm=100):
@@ -127,14 +127,14 @@ class Data_handle(object):
         for hit in hits:
             ts.append(hit.t)
        
-        tbin_size = 100
+        tbin_size = 400
         t0 = min(ts)
         t1 = max(ts)
         dt = t1 - t0 
-        num_tbins = np.int(np.ceil(dt / 100))
-        channels = 31 if split_dom else 1
+        num_tbins = np.int(np.ceil(dt / tbin_size))
+        channels = 3 if split_dom else 1
         
-        num_tbins = 140
+        num_tbins = 50 
         event = np.zeros((num_tbins, 13, 13, 18, channels))
 
 
@@ -146,6 +146,7 @@ class Data_handle(object):
 
             channel_id = hit.channel_id if split_dom else 0
             pmt = self.det.get_pmt(hit.dom_id, channel_id)
+            direction = np.array([pmt.dir.x, pmt.dir.y, pmt.dir.z])
             dom = self.det.get_dom(pmt)
             line_id = dom.line_id
             # also valid
@@ -154,9 +155,11 @@ class Data_handle(object):
             z = self.z_index[round(dom.pos.z)] 
             y, x = self.line_to_index(dom.line_id)
 
-            event[t_index, x, y, z, channel_id] += tot / self.NORM_FACTOR 
-        non = event.nonzero()    
-        return np.append(np.array(non), [event[non]], axis=0)
+            event[t_index, x, y, z] += direction * tot / self.NORM_FACTOR 
+        non = event.nonzero()
+        return event[non], np.array(non)
+#        non = event.nonzero()    
+#        return np.append(np.array(non), [event[non]], axis=0)
 
     def add_hit_to_event(self, event, hit):
         tot = hit.tot
@@ -179,31 +182,41 @@ class Data_handle(object):
         if code == 'K40':
             return np.array([0, 0, 1])
 
-#def animate_event(event_full):
-#    """Shows 3D plot of evt"""
-#    fig = plt.figure()
-#    ax = fig.add_subplot(111, projection='3d')
-#    event_full = event_full.reshape((-1,13,13,18))
-#
-#    ims = []
-#    for event in event_full:
-#        x, y, z = event.nonzero()
-#        k = event[event.nonzero()]
-#        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Oranges'))
-#        ims.append([sc])
-#    ax.set_xlim([0,13])
-#    ax.set_ylim([0,13])
-#    ax.set_zlim([0,18])
-#    ax.set_xlabel('x index')
-#    ax.set_ylabel('y index')
-#    ax.set_zlabel('z index')
-#    plt.title('TTOT on DOM')
-#    fig.colorbar(sc)
-#    ani = animation.ArtistAnimation(fig, ims)
-#    plt.show()
+def animate_event(event_full):
+    """Shows 3D plot of evt"""
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    event_full = event_full.reshape((-1,13,13,18))
+
+    ims = []
+    for event in event_full:
+        x, y, z = event.nonzero()
+        k = event[event.nonzero()]
+        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=matplotlib.colors.LogNorm(0.1, 350))
+        ims.append([sc])
+    ax.set_xlim([0,13])
+    ax.set_ylim([0,13])
+    ax.set_zlim([0,18])
+    ax.set_xlabel('x index')
+    ax.set_ylabel('y index')
+    ax.set_zlabel('z index')
+    plt.title('TTOT on DOM')
+    fig.colorbar(sc)
+    ani = animation.ArtistAnimation(fig, ims)
+    #writer = animation.writers['ffmpeg']
+    ani.save('shower_high_e.html')
+    #plt.show()
     
 
 if __name__ == "__main__":
-    evt = EVENT
     dh = Data_handle()
-    event = dh.make_event(evt.hits, split_dom=True)
+
+    ec = dh.make_event(ecc1.hits, split_dom=False)
+    mc = dh.make_event(mcc1.hits, split_dom=False)
+    kc = dh.make_event(k401.hits, split_dom=False)
+
+    with h5py.File('tevents.hdf5', 'w') as f:
+        f.create_dataset('tevt', (3,50,13,13,18,1))
+        f['tevt'][0] = ec
+        f['tevt'][1] = mc
+        f['tevt'][2] = kc
