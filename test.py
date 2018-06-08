@@ -10,12 +10,12 @@ title = 'three_classes_sum_tot'
 
 f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'a')
 
-for root_file, _ in root_files(train=False, test=True):
-	root_part = root_file.split('/')[-1]	
-	old = '/user/postm/data/root_files/' + root_part
+batch_size = 100
+root_file, _ = root_files(train=False, test=True).next()
 
-	f[root_file + 'labels'] = f[old + 'labels']
-	del f[old + 'labels']
+events, labels = f[root_file], f[root_file + 'labels']
 
-	f[root_file] = f[old]
-	del f[old]
+for j in range(0, len(labels), batch_size):
+    e = events[j: j + batch_size]
+    l = labels[j: j + batch_size]
+    print len(l)

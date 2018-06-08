@@ -35,7 +35,7 @@ with tf.name_scope(title):
         cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=model.y))
     # Train network with AdamOptimizer
     with tf.name_scope("Train"):
-        optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
+        optimizer = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(cost)
     # Compute the accuracy
     with tf.name_scope("Test"):
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(model.y, 1))
@@ -54,7 +54,7 @@ def save_output(acc, cost, test=False):
     acc = acc / float(ne)
     cost_per_event = cost / float(ne)
 
-    print '%s acc: %f, cost: %f' % (mode, acc, cost_per_event) 
+    print '\t%s\tacc: %f\tcost: %f' % (mode, acc, cost_per_event) 
     with open(PATH + 'data/results/%s/acc_%s.txt' % (title, mode), 'a') as f:
         f.write(str(acc) + '\n')
     with open(PATH + 'data/results/%s/cost_%s.txt' % (title, mode), 'a') as f:
@@ -62,7 +62,7 @@ def save_output(acc, cost, test=False):
 
 
 def test_model(sess):
-    print 'Start testing \n\t'
+    print 'Start testing'
     acc = 0  
     epoch_loss = 0
 
@@ -71,7 +71,7 @@ def test_model(sess):
         
         feed_dict = {model.x: events, model.y: labels}
         a, c = sess.run([accuracy, cost], feed_dict=feed_dict)
-        epoch_loss += c
+        epoch_loss += c * len(labels)
         acc += a * len(labels) 
    
     save_output(acc, epoch_loss, test=True)
@@ -80,20 +80,21 @@ def test_model(sess):
 
 def train_model(sess, test=True):
     print 'Start training'
+    batch_size = 500
     for epoch in range(num_epochs):
-        print "epoch", epoch, "\tbatch"
+        print "epoch", epoch 
         acc = 0 
         epoch_loss = 0
 
         #######################################################################
         for i, (root_file, _) in enumerate(root_files(debug=debug)):
-            events, labels = f[root_file].value, f[root_file + 'labels'].value
-            
-            feed_dict = {model.x: events, model.y: labels} 
-            _, a, c = sess.run([optimizer, accuracy, cost], feed_dict=feed_dict)
+            events, labels = f[root_file], f[root_file + 'labels']
 
-            epoch_loss += c
-            acc += a * len(labels)
+            for j in range(0, len(labels), batch_size):
+                feed_dict = {model.x: events[j: j + batch_size], model.y: labels[j: j + batch_size]} 
+                _, a, c = sess.run([optimizer, accuracy, cost], feed_dict=feed_dict)
+                epoch_loss += c * batch_size
+                acc += a * batch_size 
        
         save_output(acc, epoch_loss)
         if test and epoch % 10 == 0: test_model(sess)
@@ -120,7 +121,7 @@ if __name__ == "__main__":
     t_start = time()
     a = main()
     t_end = time()
-    print 'runtime', t_end - t_start
+    print 'runtime', datetime.timedelta(seconds=t_end - t_start)
         
 # dropout
 # learning rate

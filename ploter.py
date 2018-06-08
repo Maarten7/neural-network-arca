@@ -200,10 +200,6 @@ def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=N
         
 def plot_acc_cost():
     path = PATH + "data/results/%s/" % title
-    os.system("ls -l " + path + "_cost_train>" + path + "cost_train.txt")
-    os.system("ls -l " + path + "_acc_train>" + path + "acc_train.txt")
-    os.system("ls -l " + path + "_cost_test>" + path + "cost_test.txt")
-    os.system("ls -l " + path + "_acc_test>" + path + "acc_test.txt")
    
     test_every = 10
 
