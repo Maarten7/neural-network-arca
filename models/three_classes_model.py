@@ -5,6 +5,8 @@ import numpy as np
 from helper_functions import *
 
 title = 'three_classes_sum_tot'
+EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
+NUM_CLASSES = 3
 
 def conv3d(x, W):
     return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
@@ -41,7 +43,7 @@ def cnn(x):
         print 'conv1 mxpl\t', conv1.shape
 
     with tf.name_scope("Conv2"):
-        num_layers_2 = 25 
+        num_layers_2 = 60 
         conv2 = tf.nn.relu(
             conv3d(conv1, weights([3, 3, 3, num_layers_1, num_layers_2])) + bias(num_layers_2))
         print 'conv2\t\t', conv2.shape
@@ -61,14 +63,13 @@ def cnn(x):
     print 'fc\t\t', fc.shape
     with tf.name_scope("FullyC1"):
         fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights([elements, 128])) + bias(128))
+            tf.matmul(fc, weights([elements, 1028])) + bias(1028))
     print 'fc l1\t\t', fc.shape
     with tf.name_scope("FullyC2"):
         fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights([128, 16])) + bias(16))
+            tf.matmul(fc, weights([1028, 60])) + bias(60))
         print 'fc l2\t\t', fc.shape
-        labels = 3
-        output = tf.matmul(fc, weights([16, labels])) + bias(labels)
+        output = tf.matmul(fc, weights([60, NUM_CLASSES])) + bias(NUM_CLASSES)
         print 'output\t\t', output.shape
     return output
 
@@ -140,15 +141,19 @@ class Data_handle(object):
     
     def make_labels(self, code):
         """ Makes one hot labels form evt_type str"""
-        if code == 'eCC' or code == 'eNC':
+        if code < 4:
             return np.array([1, 0, 0])
-        if code == 'mCC' or code == 'muCC':
+        elif code < 6:
             return np.array([0, 1, 0])
-        if code == 'K40':
+        else:
             return np.array([0, 0, 1])
 
-EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
-NUM_CLASSES = 3
+def batches(batch_size=100):
+    indices = np.random.randint(0, NUM_GOOD_EVENT, size=batch_size)
+    return events[indices], labels[indices]
+
+
+
 
 if __name__ == "__main__":
     cnn(x)

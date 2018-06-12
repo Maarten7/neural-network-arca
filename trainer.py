@@ -32,10 +32,10 @@ with tf.name_scope(title):
         output = model.cnn(model.x)
         prediction = tf.nn.softmax(output)
     with tf.name_scope("Xentropy"):
-        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=model.y))
+        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=model.y))
     # Train network with AdamOptimizer
     with tf.name_scope("Train"):
-        optimizer = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(cost)
+        optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
     # Compute the accuracy
     with tf.name_scope("Test"):
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(model.y, 1))
@@ -90,11 +90,13 @@ def train_model(sess, test=True):
         for i, (root_file, _) in enumerate(root_files(debug=debug)):
             events, labels = f[root_file], f[root_file + 'labels']
 
-            for j in range(0, len(labels), batch_size):
-                feed_dict = {model.x: events[j: j + batch_size], model.y: labels[j: j + batch_size]} 
-                _, a, c = sess.run([optimizer, accuracy, cost], feed_dict=feed_dict)
-                epoch_loss += c * batch_size
-                acc += a * batch_size 
+#            for j in range(0, len(labels), batch_size):
+#                feed_dict = {model.x: events[j: j + batch_size], model.y: labels[j: j + batch_size]} 
+            feed_dict = {model.x: events.value, model.y: labels.value} 
+            _, a, c = sess.run([optimizer, accuracy, cost], feed_dict=feed_dict)
+            batch_size = len(labels)
+            epoch_loss += c * batch_size
+            acc += a * batch_size 
        
         save_output(acc, epoch_loss)
         if test and epoch % 10 == 0: test_model(sess)

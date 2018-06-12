@@ -25,7 +25,8 @@ z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'w'
 # Tensorboard and saving variables
 with tf.name_scope(title):
     with tf.name_scope("Model"):
-        prediction = cnn(x)
+        output = cnn(x)
+        prediction = tf.nn.softmax(output)
 saver = tf.train.Saver()
 
 # Session

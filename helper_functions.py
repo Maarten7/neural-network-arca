@@ -10,10 +10,8 @@ from mpl_toolkits.mplot3d import Axes3D
 host = socket.gethostname()
 
 PATH = "/user/postm/neural-network-arca/"
-if host == 'rance':
-	PATH = "/localstore/antares/Maarten_local/neural-network-arca/"
 LOG_DIR = PATH + "log"
-EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
+EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 
 def show_event(event):
@@ -38,16 +36,11 @@ def make_file_str(evt_type, i):
     """ returns a file str of evt_type root files"""
     i = str(i)
     path = PATH + 'data/root_files'
-    path += '/out_JTE_km3_v4_{0}{1}_{2}.evt.root'
-    n = path.format('nu', evt_type, i)
-    a = path.format('anu', evt_type, i)
-
-    return n, a
-
+    path += '/out_JTE_km3_v4_{0}_{1}.evt.root'
+    return path.format(evt_type, i)
 
 def timestamp():
     return datetime.datetime.now().strftime("%m-%d_%H:%M:%S_")
-
 
 def root_files(train=True, test=False, debug=False):
     trange = []
@@ -56,9 +49,8 @@ def root_files(train=True, test=False, debug=False):
     if debug: trange = range(1, 3)
     for i in trange:
         for evt_type in EVT_TYPES:
-            n, a = make_file_str(evt_type, i)
+            n = make_file_str(evt_type, i)
             yield n, evt_type
-            yield a, evt_type
 
 def rotate_events(events):
     k = random.randint(0,3)
@@ -88,6 +80,8 @@ def num_events(root_file_range):
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
 DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
 NUM_DEBUG_EVENTS = 55227
-NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
-NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
-NUM_EVENTS = NUM_TRAIN_EVENTS+ NUM_TEST_EVENTS
+NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values()) #329905
+NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values()) #81914
+NUM_EVENTS = NUM_TRAIN_EVENTS+ NUM_TEST_EVENTS #411819
+NUM_GOOD_EVENTS_3 = 242345
+NUM_GOOD_EVENTS_4 = 231997 

@@ -17,12 +17,12 @@ Data_handle = model.Data_handle
 EventFile.read_timeslices = True
 def data_writer(title):
     dh = Data_handle() 
-    with h5py.File(title, "a") as hfile:
-        for root_file, evt_type in root_files(train=True, test=True):
-            print root_file 
-            f = EventFile(root_file)
-            f.use_tree_index_for_mc_reading = True
+    for root_file, evt_type in root_files(train=True, test=True):
+        print root_file 
+        f = EventFile(root_file)
+        f.use_tree_index_for_mc_reading = True
             
+        with h5py.File(title, "a") as hfile:
             shape = (len(f), 50, 13, 13, 18, 1)
             dset_e = hfile.create_dataset(root_file, dtype='float64', shape=shape)
             shape = (len(f), 3)
