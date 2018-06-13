@@ -9,32 +9,35 @@ import h5py
 import importlib
 from helper_functions import *
 
-model = sys.argv[1].replace('/', '.')[:-3]
-model = importlib.import_module(model)
+model = import_model()
 title = model.title
 Data_handle = model.Data_handle
 
 EventFile.read_timeslices = True
 def data_writer(title):
     dh = Data_handle() 
-    with h5py.File(title, "a") as hfile:
-        dtf = h5py.special_dtype(vlen=np.dtype('float64'))
-        dti = h5py.special_dtype(vlen=np.dtype('int'))
-        for root_file, evt_type in root_files(debug=True):
-            print root_file 
-            f = EventFile(root_file)
-            f.use_tree_index_for_mc_reading = True
-            
-            shape = (500, 1,)
+    dtf = h5py.special_dtype(vlen=np.dtype('float64'))
+    dti = h5py.special_dtype(vlen=np.dtype('int'))
+
+    for root_file, evt_type in root_files(debug=True):
+        print root_file 
+        f = EventFile(root_file)
+        f.use_tree_index_for_mc_reading = True
+        
+        num_events = len(f)
+        with h5py.File(title, "a") as hfile:
+
+            shape = (num_events, )
             dset_t = hfile.create_dataset(root_file + 'tots', dtype=dtf, shape=shape)
-            shape = (500, 5,)
+            shape = (num_events, 5)
             dset_b = hfile.create_dataset(root_file + 'bins', dtype=dti, shape=shape)
-            shape = (500, 3)
+            shape = (num_events, 3)
             dset_l = hfile.create_dataset(root_file + "labels", dtype='int64', shape=shape)        
             ####################################################    
             
             for i, evt in enumerate(f):
-                print i , "#######"
+                if i % 250 == 0:
+                    print '\t', float(i) / num_events, '% done'
                 tots, bins = dh.make_event(evt.hits, split_dom=True)
                 try:
                     label = dh.make_labels(evt_type)
@@ -44,10 +47,9 @@ def data_writer(title):
                 dset_b[i] = bins 
                 dset_l[i] = label 
 
-                if i == 499:
-                   break 
             ####################################################
                 
+data_writer(title=PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
 
 def meta_data_writer(title):
     dh = Data_handle() 
@@ -87,5 +89,4 @@ def meta_data_writer(title):
             dset = hfile.create_dataset(root_file + 'directions', data=directions)
             ####################################################
             
-data_writer(title=PATH + 'data/hdf5_files/events_and_labels2_%s.hdf5' % title)
 #meta_data_writer(title=PATH + 'data/hdf5_files/meta_data.hdf5')

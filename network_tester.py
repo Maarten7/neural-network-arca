@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 
 from helper_functions import *
 
-model = sys.argv[1].replace('/', '.')[:-3]
-model = importlib.import_module(model)
+model = import_model()
 x, y = model.x, model.y
 title = model.title
 cnn = model.cnn

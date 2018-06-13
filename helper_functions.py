@@ -3,7 +3,6 @@ import random
 from ROOT import *
 import aa
 import numpy as np
-import socket
 import sys
 import matplotlib
 import importlib
@@ -11,15 +10,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from copy import copy
 
-host = socket.gethostname()
 
 matplotlib.rcParams.update({'font.size': 22})
 
 PATH = "/user/postm/neural-network-arca/"
-if host == 'rance':
-	PATH = "/localstore/antares/Maarten_local/neural-network-arca/"
 LOG_DIR = PATH + "log"
-EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
+EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 
 def import_model():
@@ -80,16 +76,9 @@ def make_file_str(evt_type, i):
     """ returns a file str of evt_type root files"""
     i = str(i)
     path = PATH + 'data/root_files'
-    path += '/out_JTE_km3_v4_{0}{1}_{2}.evt.root'
-    n = path.format('nu', evt_type, i)
-    a = path.format('anu', evt_type, i)
-
-    return n, a
-
-
-def timestamp():
-    return datetime.datetime.now().strftime("%m-%d_%H:%M:%S_")
-
+    path += '/out_JTE_km3_v4_{0}_{1}.evt.root'
+    n = path.format(evt_type, i)
+    return n
 
 def root_files(train=True, test=False, debug=False):
     trange = []
@@ -98,9 +87,8 @@ def root_files(train=True, test=False, debug=False):
     if debug: trange = range(1, 4) 
     for i in trange:
         for evt_type in EVT_TYPES:
-            n, a = make_file_str(evt_type, i)
+            n = make_file_str(evt_type, i)
             yield n, evt_type
-            yield a, evt_type
 
 def rotate_events(events):
     k = random.randint(0,3)
@@ -117,19 +105,33 @@ def num_events(root_file_range):
             z[evt_type] = len(f)
     return z
 
+def num_good_events(threshold):
+    EventFile.read_timeslices = True
+    for root_file, evt_type in root_files(test=True):
+        f = EventFile(root_file)
+        f.use_tree_index_for_mc_reading = True
+
+        for evt in f:
+            
+            if len(evt.mc_hits) == 0 and evt_type != 'K40':
+                print evt_type, root_file
+                break
+                
+
+
 EventFile.read_timeslices = True
-eccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nueCC_1.evt.root'
-#mccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_numuCC_1.evt.root'
+#eccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nueCC_1.evt.root'
+mccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_numuCC_1.evt.root'
 #k40f = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nuK40_1.evt.root'
-#
-f = EventFile(eccf)
-f.use_tree_index_for_mc_reading = True
-fi = iter(f)
-event = fi.next()
-hit = event.hits[0]
-det = Det(PATH + 'data/km3net_115.det')
-pmt = det.get_pmt(hit.dom_id, hit.channel_id)
-dom = det.get_dom(pmt)
+##
+#f = EventFile(k40f)
+#f.use_tree_index_for_mc_reading = True
+#fi = iter(f)
+#evt = fi.next()
+#hit = event.hits[0]
+#det = Det(PATH + 'data/km3net_115.det')
+#pmt = det.get_pmt(hit.dom_id, hit.channel_id)
+#dom = det.get_dom(pmt)
 #lenf = len(f)
 #f.set_index(lenf - 8)
 #ecc1 = copy(f.evt)
@@ -148,7 +150,9 @@ dom = det.get_dom(pmt)
 
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
 DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
+DIR_GOOD_EVENTS_3 = {'e': 59906 + 83120, 'm': 99319}
 NUM_DEBUG_EVENTS = 55227
 NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
 NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
+NUM_GOOD_EVENTS = sum(DIR_GOOD_EVENTS_3.values())
 NUM_EVENTS = NUM_TRAIN_EVENTS+ NUM_TEST_EVENTS

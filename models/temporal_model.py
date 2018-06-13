@@ -9,7 +9,7 @@ import matplotlib
 import h5py
 title = 'temporal'
 
-EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
+EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 
 def conv3d(x, W):
@@ -31,16 +31,17 @@ def bias(shape):
     return b
 
 def print_tensor(x):
-    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
+    #print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
+    pass
 
-x = tf.placeholder(tf.float32, [None, 50, 13, 13, 18, 3], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, None, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
 
 nodes =   {"l1": 25,
            "l2": 35,
            "l3": 80,
            "l4": 40,
-           "l5": 3} 
+           "l5": 20} 
            
 weights = {"l1": weight([4, 4, 4, 3, nodes["l1"]]),
            "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
@@ -55,8 +56,10 @@ biases =  {"l1": bias(nodes["l1"]),
 def cnn(x):
     print_tensor(x)
     out_time_bin = []
-    time_bins = 50
-    for i in range(time_bins):
+    time_bins = x._shape_as_list()[1] 
+    i = 0
+    #for i in range(time_bins):
+    def body(x, i):
         input = x[:,i,:,:,:,:] 
         conv1 = tf.nn.relu(
             conv3d(input, weights["l1"]) + biases["l1"])
@@ -77,6 +80,12 @@ def cnn(x):
             tf.matmul(fc, weights["l4"]) + biases["l4"])
 
         out_time_bin.append(fc)
+        i += 1
+
+    def condition(x, i):
+        return i < time_bins
+
+    tf.while_loop(condition, body, [x, i])
 
     c = tf.concat(out_time_bin, 1)
     lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1)
@@ -127,14 +136,13 @@ class Data_handle(object):
         for hit in hits:
             ts.append(hit.t)
        
-        tbin_size = 400
         t0 = min(ts)
         t1 = max(ts)
         dt = t1 - t0 
+
+        tbin_size = 400
         num_tbins = np.int(np.ceil(dt / tbin_size))
         channels = 3 if split_dom else 1
-        
-        num_tbins = 50 
         event = np.zeros((num_tbins, 13, 13, 18, channels))
 
 
@@ -154,32 +162,22 @@ class Data_handle(object):
 
             z = self.z_index[round(dom.pos.z)] 
             y, x = self.line_to_index(dom.line_id)
-
-            event[t_index, x, y, z] += direction * tot / self.NORM_FACTOR 
+            try:
+                event[t_index, x, y, z] += direction * tot / self.NORM_FACTOR 
+            except IndexError:
+                event[t_index - 1, x, y, z] += direction * tot / self.NORM_FACTOR 
+                
         non = event.nonzero()
         return event[non], np.array(non)
-#        non = event.nonzero()    
-#        return np.append(np.array(non), [event[non]], axis=0)
 
-    def add_hit_to_event(self, event, hit):
-        tot = hit.tot
-        pmt = self.det.get_pmt(hit.dom_id, hit.channel_id)
-        dom = self.det.get_dom(pmt)
-        line_id = dom.line_id
-
-        z = self.z_index[round(dom.pos.z)]
-        y, x = self.line_to_index(dom.line_id)
-
-        event[0, x, y, z] += tot / self.NORM_FACTOR
-        return event
     
     def make_labels(self, code):
-        """ Makes one hot labels form evt_type str"""
-        if code == 'eCC' or code == 'eNC':
+        """ Makes one hot labels form evt_type code"""
+        if code < 4:
             return np.array([1, 0, 0])
-        if code == 'mCC' or code == 'muCC':
+        elif code < 6:
             return np.array([0, 1, 0])
-        if code == 'K40':
+        else:
             return np.array([0, 0, 1])
 
 def animate_event(event_full):
@@ -206,17 +204,46 @@ def animate_event(event_full):
     #writer = animation.writers['ffmpeg']
     ani.save('shower_high_e.html')
     #plt.show()
+
+f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'r')
+def batches(batch_size, train=True, test=False, debug=False):
+    # loop over root files
+    for root_file, _ in root_files(train=train, test=test, debug=debug): 
+        # get events information from hdf5 file
+        tots, bins, labels = f[root_file + 'tots'], f[root_file + 'bins'], f[root_file + 'labels']
+        # loop over batches
+        for batch in range(0, len(labels), batch_size):
+            # make batch_size number of empty events
+            events = np.empty((batch_size,))
+            for batch_index in range(batch, batch + batch_size):
+
+                event = np.zeros((max(bins[batch_index, 0]), 13, 13, 18, 3))
+                # fill events
+                b = tuple(bins[batch_index])
+                event[b] = tots[batch_index][0]
+                events[batch_index % batch_size] = event
     
+            yield events, labels[batch: batch + batch_size]
 
 if __name__ == "__main__":
+    EventFile.read_timeslices = True
+    rf, _ = root_files().next()
     dh = Data_handle()
+    f = EventFile(rf)
+    f.use_tree_index_for_mc_reading = True
 
-    ec = dh.make_event(ecc1.hits, split_dom=False)
-    mc = dh.make_event(mcc1.hits, split_dom=False)
-    kc = dh.make_event(k401.hits, split_dom=False)
+    dtf = h5py.special_dtype(vlen=np.dtype('float64'))
+    dti = h5py.special_dtype(vlen=np.dtype('int'))
+    num_events = 100
+    with h5py.File('test.hdf5', "a") as hfile:
+        shape = (num_events,)
+        dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
+        shape = (num_events, 5)
+        dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
+        
+        for i, evt in enumerate(f):
+            tots, bins = dh.make_event(evt.hits)
+            dset_t[i] = tots 
+            dset_b[i] = bins 
 
-    with h5py.File('tevents.hdf5', 'w') as f:
-        f.create_dataset('tevt', (3,50,13,13,18,1))
-        f['tevt'][0] = ec
-        f['tevt'][1] = mc
-        f['tevt'][2] = kc
+            if i == 99: break
