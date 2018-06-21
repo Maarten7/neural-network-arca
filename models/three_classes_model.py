@@ -29,7 +29,7 @@ def bias(shape):
     b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
     return b
 
-x = tf.placeholder(tf.float32, [None, 1, 13, 13, 18], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, 13, 13, 18], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
 
 def cnn(x):
@@ -149,11 +149,26 @@ class Data_handle(object):
         else:
             return np.array([0, 0, 1])
 
+f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
 def batches(batch_size=100):
-    f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
     indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
     
     for k in range(0, NUM_GOOD_TRAIN_EVENTS_3, batch_size):
+        batch = indices[k: k + batch_size]
+        events = np.empty((batch_size, 13, 13, 18))
+        labels = np.empty((batch_size, 3))
+
+        for i, j in enumerate(batch):
+            events[i] = f['all_events'][j]
+            labels[i] = f['all_labels'][j]
+
+        yield events, labels
+        
+def train_batches(batch_size=1000):
+    test_indices = range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3)
+    indices = np.random.choice(test_indices, NUM_GOOD_TEST_EVENTS_3, replace=False)
+    
+    for k in range(0, NUM_GOOD_TEST_EVENTS_3, batch_size):
         batch = indices[k: k + batch_size]
         events = np.empty((batch_size, 13, 13, 18))
         labels = np.empty((batch_size, 3))
