@@ -13,24 +13,23 @@ from helper_functions import *
 from sklearn.metrics import confusion_matrix
 
 model = sys.argv[1].replace('/', '.')[:-3]
-try:
-	model = importlib.import_module(model)
-	title = getattr(model, "title") 
-except ImportError:
-	title = 'three_classes_sum_tot'
+model = importlib.import_module(model)
+title = model.title
 
-data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
-predictions = pred_file['predictions']
-labels = pred_file['labels']
-ll = np.argmax(labels.value, axis=1)
-lt = np.argmax(predictions.value, axis=1)
-eq = np.equal(ll, lt)
+print title
 
-eqq = eq.astype(int)
-print sum(eqq)/float(len(eqq))
-
+#data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
+#pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+#meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
+#predictions = pred_file['predictions']
+#labels = pred_file['labels']
+#ll = np.argmax(labels.value, axis=1)
+#lt = np.argmax(predictions.value, axis=1)
+#eq = np.equal(ll, lt)
+#
+#eqq = eq.astype(int)
+#print sum(eqq)/float(len(eqq))
+#
 def plot_confusion_matrix():
     cm = confusion_matrix(ll, lt)
     summ = np.sum(cm, axis=1, dtype=float)
@@ -201,8 +200,9 @@ def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=N
         ax.legend()
     plt.show()
         
-def plot_acc_cost():
-    path = PATH + "data/results/%s/" % title
+def plot_acc_cost(extra=''):
+    title = 'three_classes_sum_tot'
+    title = title + extra 
    
     test_every = 10
 
@@ -244,6 +244,17 @@ def plot_acc_cost():
     ax2.set_ylabel('Accuracy')
     plt.show()
 
+def plot_cost_versions():
+    title = 'three_classes_sum_tot'
+    data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % title)
+    epochs = len(data)
+    plt.plot(data, label='train')
+    title = title + '_v2_no_softmax' 
+    data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % title)
+    epochs = len(data)
+    plt.plot(data, label='train v2')
+    plt.show()
+    
 
 def positions():
     positions = []
@@ -278,7 +289,9 @@ def positions():
     plt.show()
 
 if __name__ == '__main__':
-    plot_acc_cost()
+#    plot_acc_cost()
+#    plot_acc_cost('_v2_no_softmax')
+    plot_cost_versions()
 #    histogram(output_distribution, bins=40, domain=(0,1))
 #    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
 #    histogram(nhits_distribution, bins=100, domain=(0,200))

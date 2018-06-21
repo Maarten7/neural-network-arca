@@ -9,11 +9,14 @@ from helper_functions import *
 title = 'three_classes_sum_tot'
 
 
-f = h5py.File(title, "r") 
+f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
 
 
-#dset = f.create_dataset('hoi', dtype='float64', shape=(100,))
-#
-#
-#for i in range(19):
-#    dset[i] = 1
+rf = root_files()
+
+for i in range(10):
+    rr, _ = rf.next()
+
+f[rr]
+
+

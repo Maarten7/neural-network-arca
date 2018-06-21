@@ -5,7 +5,7 @@ import numpy as np
 from helper_functions import *
 
 title = 'three_classes_sum_tot'
-EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
+EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 
 def conv3d(x, W):
@@ -149,11 +149,18 @@ class Data_handle(object):
             return np.array([0, 0, 1])
 
 def batches(batch_size=100):
-    indices = np.random.randint(0, NUM_GOOD_EVENT, size=batch_size)
-    return events[indices], labels[indices]
+    f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+    indices = np.random.choises(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
+    
+    for k in range(0, NUM_GOOD_TRAIN_EVENTS_3, batch_size):
+        batch = indices[k: k + batch_size]
+        events, labels = np.zeros((batch_size, 13, 13, 18))
+        for i, j in enumerate(batch):
+            events[i] = f['all_events'][j]
+            labels[i] = f['all_labels'][j]
 
-
-
+        yield events, labels
 
 if __name__ == "__main__":
-    cnn(x)
+    batchez = batches()
+    
