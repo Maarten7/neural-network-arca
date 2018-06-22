@@ -163,16 +163,6 @@ class Data_handle(object):
         non = event.nonzero()
         return event[non], np.array(non)
 
-    
-    def make_labels(self, code):
-        """ Makes one hot labels form evt_type code"""
-        if code < 4:
-            return np.array([1, 0, 0])
-        elif code < 6:
-            return np.array([0, 1, 0])
-        else:
-            return np.array([0, 0, 1])
-
 def animate_event(event_full):
     """Shows 3D plot of evt"""
     fig = plt.figure()
@@ -197,10 +187,18 @@ def animate_event(event_full):
     #writer = animation.writers['ffmpeg']
     plt.show()
 
+
+
 f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
-def batches(batch_size):
-    indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
-    for k in range(0, NUM_GOOD_TRAIN_EVENTS_3, 100):
+def batches(batch_size, test=False):
+    if not test:
+        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
+        num_events = NUM_GOOD_TRAIN_EVENTS_3
+    else:
+        indices = np.random.choice(range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3), NUM_GOOD_TEST_EVENTS_3, replace=False)
+        num_events = NUM_GOOD_TEST_EVENTS_3
+    
+    for k in range(0, num_events, 100):
         batch = indices[k: k + batch_size]
         events = np.zeros((batch_size, 50, 13, 13, 18, 3))
         labels = np.zeros((batch_size, NUM_CLASSES))
@@ -215,22 +213,6 @@ def batches(batch_size):
             labels[i] = [E, x, y, z, dx, dy, dz] 
         yield events, labels
 
-def train_batches(batch_size):
-    indices = np.random.choice(range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3), NUM_GOOD_TEST_EVENTS_3, replace=False)
-    for k in range(0, NUM_GOOD_TEST_EVENTS_3, 100):
-        batch = indices[k: k + batch_size]
-        events = np.zeros((batch_size, 50, 13, 13, 18, 3))
-        labels = np.zeros((batch_size, NUM_CLASSES))
-        for i, j in enumerate(batch):
-            tots, bins = f['all_tots'][j], f['all_bins'][j]
-            E = f['all_energies'][j]
-            x, y, z = f['all_positions'][j]
-            dx, dy, dz = f['all_directions'][j]
-
-            b = tuple(bins)
-            events[i][b] = tots
-            labels[i] = [E, x, y, z, dx, dy, dz] 
-        yield events, labels
 
 if __name__ == "__main__":
         pass
