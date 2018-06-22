@@ -106,16 +106,24 @@ def num_events(root_file_range):
     return z
 
 def num_good_events(threshold):
+    tra = {typ: 0 for typ in EVT_TYPES}
+    tes = {typ: 0 for typ in EVT_TYPES}
     EventFile.read_timeslices = True
     for root_file, evt_type in root_files(test=True):
         f = EventFile(root_file)
         f.use_tree_index_for_mc_reading = True
 
+        if 'K40' not in evt_type:
+            continue
+
         for evt in f:
+            if '13' in root_file:
+                tes[evt_type] += 1
+            else:
+                tra[evt_type] += 1
+                    
+    return tra, tes 
             
-            if len(evt.mc_hits) == 0 and evt_type != 'K40':
-                print evt_type, root_file
-                break
                 
 
 
@@ -150,9 +158,14 @@ mccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_numuCC_1.
 
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
 DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
-DIR_GOOD_EVENTS_3 = {'e': 59906 + 83120, 'm': 99319}
 NUM_DEBUG_EVENTS = 55227
 NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
 NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
-NUM_GOOD_EVENTS = sum(DIR_GOOD_EVENTS_3.values())
-NUM_EVENTS = NUM_TRAIN_EVENTS+ NUM_TEST_EVENTS
+NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
+
+
+DIR_GOOD_TRAIN_EVENTS_3 = {'anueNC': 26707, 'numuCC': 45231, 'nueCC': 38778, 'anumuCC': 47666, 'anueCC': 38898, 'nueNC': 29207, 'nuK40': 48048, 'anuK40': 48048} 
+DIR_GOOD_TEST_EVENTS_3 = {'anueNC': 1906, 'numuCC': 3142, 'nueCC': 2803, 'anumuCC': 3280, 'anueCC': 2641, 'nueNC': 2086, 'nuK40': 3432, 'anuK40': 3432}
+NUM_GOOD_TRAIN_EVENTS_3 = sum(DIR_GOOD_TRAIN_EVENTS_3.values())
+NUM_GOOD_TEST_EVENTS_3 = sum(DIR_GOOD_TEST_EVENTS_3.values())
+NUM_GOOD_EVENTS_3 = NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3 #242345 + 2* 48048 + 2 * 3432  ==== 345305

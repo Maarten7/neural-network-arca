@@ -34,7 +34,7 @@ def print_tensor(x):
     #print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
     pass
 
-x = tf.placeholder(tf.float32, [None, None, 13, 13, 18, 3], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, 50, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
 
 nodes =   {"l1": 25,
@@ -56,10 +56,9 @@ biases =  {"l1": bias(nodes["l1"]),
 def cnn(x):
     print_tensor(x)
     out_time_bin = []
-    time_bins = x._shape_as_list()[1] 
-    i = 0
-    #for i in range(time_bins):
-    def body(x, i):
+    time_bins = x._shape_as_list()[1]
+    #time_bins = tf.shape(x)[1]
+    for i in range(time_bins):
         input = x[:,i,:,:,:,:] 
         conv1 = tf.nn.relu(
             conv3d(input, weights["l1"]) + biases["l1"])
@@ -80,12 +79,6 @@ def cnn(x):
             tf.matmul(fc, weights["l4"]) + biases["l4"])
 
         out_time_bin.append(fc)
-        i += 1
-
-    def condition(x, i):
-        return i < time_bins
-
-    tf.while_loop(condition, body, [x, i])
 
     c = tf.concat(out_time_bin, 1)
     lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1)
@@ -202,48 +195,38 @@ def animate_event(event_full):
     fig.colorbar(sc)
     ani = animation.ArtistAnimation(fig, ims)
     #writer = animation.writers['ffmpeg']
-    ani.save('shower_high_e.html')
-    #plt.show()
+    plt.show()
 
-f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'r')
-def batches(batch_size, train=True, test=False, debug=False):
-    # loop over root files
-    for root_file, _ in root_files(train=train, test=test, debug=debug): 
-        # get events information from hdf5 file
-        tots, bins, labels = f[root_file + 'tots'], f[root_file + 'bins'], f[root_file + 'labels']
-        # loop over batches
-        for batch in range(0, len(labels), batch_size):
-            # make batch_size number of empty events
-            events = np.empty((batch_size,))
-            for batch_index in range(batch, batch + batch_size):
+f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+def batches(batch_size):
+    indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
+    for k in range(0, NUM_GOOD_TRAIN_EVENTS_3, 100):
+        batch = indices[k: k + batch_size]
+        events = np.zeros((batch_size, 50, 13, 13, 18, 3))
+        labels = np.zeros((batch_size, 3))
+        for i, j in enumerate(batch):
+            tots, bins = f['all_tots'][j], f['all_bins'][j]
+            label = f['all_labels'][j]
 
-                event = np.zeros((max(bins[batch_index, 0]), 13, 13, 18, 3))
-                # fill events
-                b = tuple(bins[batch_index])
-                event[b] = tots[batch_index][0]
-                events[batch_index % batch_size] = event
-    
-            yield events, labels[batch: batch + batch_size]
+            b = tuple(bins)
+            events[i][b] = tots
+            labels[i] = label
+        yield events, labels
+
+def train_batches(batch_size):
+    indices = np.random.choice(range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3), NUM_GOOD_TEST_EVENTS_3, replace=False)
+    for k in range(0, NUM_GOOD_TEST_EVENTS_3, 100):
+        batch = indices[k: k + batch_size]
+        events = np.zeros((batch_size, 50, 13, 13, 18, 3))
+        labels = np.zeros((batch_size, 3))
+        for i, j in enumerate(batch):
+            tots, bins = f['all_tots'][j], f['all_bins'][j]
+            label = f['all_labels'][j]
+
+            b = tuple(bins)
+            events[i][b] = tots
+            labels[i] = label
+        yield events, labels
 
 if __name__ == "__main__":
-    EventFile.read_timeslices = True
-    rf, _ = root_files().next()
-    dh = Data_handle()
-    f = EventFile(rf)
-    f.use_tree_index_for_mc_reading = True
-
-    dtf = h5py.special_dtype(vlen=np.dtype('float64'))
-    dti = h5py.special_dtype(vlen=np.dtype('int'))
-    num_events = 100
-    with h5py.File('test.hdf5', "a") as hfile:
-        shape = (num_events,)
-        dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
-        shape = (num_events, 5)
-        dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
-        
-        for i, evt in enumerate(f):
-            tots, bins = dh.make_event(evt.hits)
-            dset_t[i] = tots 
-            dset_b[i] = bins 
-
-            if i == 99: break
+        pass
