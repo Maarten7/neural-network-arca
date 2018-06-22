@@ -8,7 +8,7 @@ import h5py
 import sys
 import importlib
 import matplotlib.pyplot as plt
-
+from time import time
 from helper_functions import *
 
 model = sys.argv[1].replace('/', '.')[:-3]
@@ -18,15 +18,13 @@ title = model.title
 cnn = model.cnn
 
 # Train data
-f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'r')
+f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
 # Write file
 z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'w')
 
 # Tensorboard and saving variables
-with tf.name_scope(title):
-    with tf.name_scope("Model"):
-        output = cnn(x)
-        prediction = tf.nn.softmax(output)
+output = cnn(x)
+prediction = tf.nn.softmax(output)
 saver = tf.train.Saver()
 
 # Session
@@ -36,17 +34,21 @@ with tf.Session(config=config) as sess:
 
     ##########################################################################
     print "Testing"
+    with h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'w') as z:
+        dset_p = z.create_dataset('test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, 3), dtype='float')
+        t0 = time()
+        for i in range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3, 100):
+            events, labels = f['all_events'][i: i + 100], f['all_labels'][i: i + 100]
+            feed_dict = {x: events, y: labels}
+            t00 = time()
+            p = sess.run(prediction, feed_dict=feed_dict)
+            t11 = time()
+            
+            print '\t', t11 - t00 / 100.
 
-    pred = np.empty((0, NUM_CLASSES))
-    labe = np.empty((0, NUM_CLASSES))
-    for root_file, _ in root_files(train=False, test=True):
-        events, labels = f[root_file].value, f[root_file + 'labels'].value
-        feed_dict = {x: events, y: labels}
-        p = sess.run(prediction, feed_dict=feed_dict)
+            dset_p[i: i + 100] = p
 
-        pred = np.append(pred, p, axis=0)
-        labe = np.append(labe, labels, axis=0)
-
-    z.create_dataset('predictions', data=pred)
-    z.create_dataset('labels', data=labe)
+        t1 = time()
+        time_per_event = (t1 - t0)/ NUM_TRAIN_EVENTS
+        print time_per_event
     ##########################################################################

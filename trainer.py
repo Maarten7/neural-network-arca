@@ -21,7 +21,7 @@ f = model.f
 # of detector.
 debug = eval(sys.argv[2])
 num_epochs = 10000 if not debug else 2
-num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS
+num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
 
 #################################################################
 
@@ -66,7 +66,7 @@ def test_model(sess):
 
     acc = 0 
     loss = 0
-    batch_size = 1000
+    batch_size = 2000
     for events, labels in model.train_batches(batch_size):
         feed_dict = {model.x: events, model.y: labels}
         a, c = sess.run([accuracy, cost], feed_dict=feed_dict)
@@ -79,7 +79,7 @@ def test_model(sess):
 
 def train_model(sess, test=True):
     print 'Start training'
-    batch_size = 500
+    batch_size = 1500
     for epoch in range(num_epochs):
         print "epoch", epoch 
         acc = 0 

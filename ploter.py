@@ -291,7 +291,8 @@ def positions():
 if __name__ == '__main__':
 #    plot_acc_cost()
 #    plot_acc_cost('_v2_no_softmax')
-    plot_cost_versions()
+    plot_acc_cost('_batches')
+#    plot_cost_versions()
 #    histogram(output_distribution, bins=40, domain=(0,1))
 #    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
 #    histogram(nhits_distribution, bins=100, domain=(0,200))
