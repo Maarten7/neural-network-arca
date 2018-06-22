@@ -16,7 +16,7 @@ batches = model.batches
 
 debug = eval(sys.argv[2])
 num_epochs = 1000 if not debug else 2
-num_events = NUM_DEBUG_EVENTS if debug else NUM_TRAIN_EVENTS
+num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
 
 
 # Loss & Training
@@ -29,7 +29,7 @@ with tf.name_scope(title):
         cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=model.y))
     # Train network with AdamOptimizer
     with tf.name_scope("Train"):
-        optimizer = tf.train.AdamOptimizer(learning_rate=1e-6).minimize(cost)
+        optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
     # Compute the accuracy
     with tf.name_scope("Test"):
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(model.y, 1))
@@ -45,7 +45,7 @@ def save_output(acc, cost, test=False):
             test set"""
     mode = 'test' if test else 'train'
     if test:
-        ne = NUM_TEST_EVENTS
+        ne = NUM_GOOD_TEST_EVENTS_3
     else:
         ne = num_events 
 
@@ -63,10 +63,10 @@ def test_model(sess):
         input sess: a tensor flow session"""
     acc = 0 
     epoch_loss = 0
-    batch_size = 100
+    batch_size = 100 
 
     # loop over all data in batches
-    for events, labels in batches(batch_size=batch_size, train=False, test=True):
+    for events, labels in test_batches(batch_size=batch_size):
         # Train
         feed_dict = {model.x: events, model.y: labels} 
         c, a = sess.run([cost,  accuracy], feed_dict=feed_dict)
@@ -84,19 +84,19 @@ def train_model(sess, test=True):
         input test, boolean, default True, if True the accuracy and cost
                     of test set are calculated"""
     print 'Start training'
-    batch_size = 100
+    batch_size = 60 
     for epoch in range(num_epochs):
         print "epoch", epoch 
         acc, epoch_loss = 0, 0
         #######################################################################
-        for events, labels in batches(batch_size=batch_size, debug=debug):
+        for events, labels in batches(batch_size=batch_size):
             # Train
             feed_dict = {model.x: events, model.y: labels} 
-            _, c, a, p = sess.run([optimizer, cost, accuracy, prediction], feed_dict=feed_dict)
+            _, c, a = sess.run([optimizer, cost, accuracy], feed_dict=feed_dict)
 
             # Calculate loss and accuracy
-            epoch_loss += c * len(labels) 
-            acc += a * len(labels) 
+            epoch_loss += c * batch_size 
+            acc += a * batch_size 
             
 
         # Save accuracy and loss/cost

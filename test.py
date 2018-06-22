@@ -8,12 +8,5 @@ from helper_functions import *
 
 title = 'temporal'
 
-q = h5py.File('est.hdf5', 'r')
+f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
 
-f = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title, 'r')
-
-z = f['user/postm/neural-network-arca/data/root_files/']
-
-
-tt = q['all_tots']
-bb = q['all_bins'] 

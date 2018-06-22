@@ -1,17 +1,16 @@
-#!/usr/bin/python -i
-import tensorflow as tf
 from ROOT import *
 import aa
 import numpy as np
+import tensorflow as tf
 from helper_functions import *
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-
+import matplotlib
+import h5py
 title = 'reconstruction'
 
-# Energie, dir.x, dir.y, dir.z, pos.x , pos.y, pos.z, t
-NUM_OUTPUTS = 8 
-
+EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
+NUM_CLASSES = 7 # energie, x, y, z, dx, dy, dz
 
 def conv3d(x, W):
     return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
@@ -32,32 +31,34 @@ def bias(shape):
     return b
 
 def print_tensor(x):
-    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
+    #print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
+    pass
 
-x = tf.placeholder(tf.float32, [None, None, 13, 13, 18, 31], name="X_placeholder")
-y = tf.placeholder(tf.float32, [None, 4], name="Y_placeholder")
+x = tf.placeholder(tf.float32, [None, 50, 13, 13, 18, 3], name="X_placeholder")
+y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
+
+nodes =   {"l1": 25,
+           "l2": 35,
+           "l3": 80,
+           "l4": 40,
+           "l5": 20} 
+           
+weights = {"l1": weight([4, 4, 4, 3, nodes["l1"]]),
+           "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
+           "l3": weight([15435, nodes["l3"]]),
+           "l4": weight([nodes["l3"], nodes["l4"]])}
+
+biases =  {"l1": bias(nodes["l1"]),
+           "l2": bias(nodes["l2"]),
+           "l3": bias(nodes["l3"]),
+           "l4": bias(nodes["l4"])}
 
 def cnn(x):
-
-    nodes =   {"l1": 60,
-               "l2": 35,
-               "l3": 100,
-               "l4": 40,
-               "l5": 20} 
-               
-    weights = {"l1": weight([4, 4, 4, 31, nodes["l1"]]),
-               "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
-               "l3": weight([elements, nodes["l3"]]),
-               "l4": weight([nodes["l3"], nodes["l4"]])}
-
-    biases =  {"l1": bias(nodes["l1"]),
-               "l2": bias(nodes["l2"]),
-               "l3": bias(nodes["l3"]),
-               "l4": bias(nodes["l4"])}
-    
     print_tensor(x)
     out_time_bin = []
-    for i in range(len(x[0]):
+    time_bins = x._shape_as_list()[1]
+    #time_bins = tf.shape(x)[1]
+    for i in range(time_bins):
         input = x[:,i,:,:,:,:] 
         conv1 = tf.nn.relu(
             conv3d(input, weights["l1"]) + biases["l1"])
@@ -66,8 +67,9 @@ def cnn(x):
             conv3d(conv1, weights["l2"]) + biases["l2"])
 
         conv2 = maxpool3d(conv2)
-    
+
         elements = np.prod(conv2._shape_as_list()[1:])
+
         fc = tf.reshape(conv2, [-1, elements])
         
         fc = tf.nn.sigmoid(
@@ -79,11 +81,10 @@ def cnn(x):
         out_time_bin.append(fc)
 
     c = tf.concat(out_time_bin, 1)
-    
-    lstm_layer = tf.contrib.rnn.BasisLSTMCell(nodes["l5"], forget_bias=1)
-    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=float64)
-    prediction = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_OUTPUTS])) + bias(OUTPUTS)
-    return prediction        
+    lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1)
+    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=tf.float32)
+    prediction = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+    return prediction
 
 class Data_handle(object):
     def __init__(self, norm=100):
@@ -128,14 +129,13 @@ class Data_handle(object):
         for hit in hits:
             ts.append(hit.t)
        
-        tbin_size = 100
         t0 = min(ts)
         t1 = max(ts)
         dt = t1 - t0 
-        num_tbins = np.int(np.ceil(dt / 100))
-        print dt, num_tbins
-        channels = 31 if split_dom else 1
-        
+
+        tbin_size = 400
+        num_tbins = np.int(np.ceil(dt / tbin_size))
+        channels = 3 if split_dom else 1
         event = np.zeros((num_tbins, 13, 13, 18, channels))
 
 
@@ -147,6 +147,7 @@ class Data_handle(object):
 
             channel_id = hit.channel_id if split_dom else 0
             pmt = self.det.get_pmt(hit.dom_id, channel_id)
+            direction = np.array([pmt.dir.x, pmt.dir.y, pmt.dir.z])
             dom = self.det.get_dom(pmt)
             line_id = dom.line_id
             # also valid
@@ -154,25 +155,23 @@ class Data_handle(object):
 
             z = self.z_index[round(dom.pos.z)] 
             y, x = self.line_to_index(dom.line_id)
+            try:
+                event[t_index, x, y, z] += direction * tot / self.NORM_FACTOR 
+            except IndexError:
+                event[t_index - 1, x, y, z] += direction * tot / self.NORM_FACTOR 
+                
+        non = event.nonzero()
+        return event[non], np.array(non)
 
-            event[t_index, x, y, z, channel_id] += tot / self.NORM_FACTOR 
-        return event
-
-    def add_hit_to_event(self, event, hit):
-        tot = hit.tot
-        pmt = self.det.get_pmt(hit.dom_id, hit.channel_id)
-        dom = self.det.get_dom(pmt)
-        line_id = dom.line_id
-
-        z = self.z_index[round(dom.pos.z)]
-        y, x = self.line_to_index(dom.line_id)
-
-        event[0, x, y, z] += tot / self.NORM_FACTOR
-        return event
     
-    def make_labels(self, E, dx, dy, dz, x, y, z, t):
-        """ Makes one hot labels form evt_type str"""
-        return np.array([E, dx, dy, dz, x, y, z, t])
+    def make_labels(self, code):
+        """ Makes one hot labels form evt_type code"""
+        if code < 4:
+            return np.array([1, 0, 0])
+        elif code < 6:
+            return np.array([0, 1, 0])
+        else:
+            return np.array([0, 0, 1])
 
 def animate_event(event_full):
     """Shows 3D plot of evt"""
@@ -184,7 +183,7 @@ def animate_event(event_full):
     for event in event_full:
         x, y, z = event.nonzero()
         k = event[event.nonzero()]
-        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Oranges'))
+        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=matplotlib.colors.LogNorm(0.1, 350))
         ims.append([sc])
     ax.set_xlim([0,13])
     ax.set_ylim([0,13])
@@ -195,11 +194,43 @@ def animate_event(event_full):
     plt.title('TTOT on DOM')
     fig.colorbar(sc)
     ani = animation.ArtistAnimation(fig, ims)
+    #writer = animation.writers['ffmpeg']
     plt.show()
-    
+
+f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+def batches(batch_size):
+    indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
+    for k in range(0, NUM_GOOD_TRAIN_EVENTS_3, 100):
+        batch = indices[k: k + batch_size]
+        events = np.zeros((batch_size, 50, 13, 13, 18, 3))
+        labels = np.zeros((batch_size, NUM_CLASSES))
+        for i, j in enumerate(batch):
+            tots, bins = f['all_tots'][j], f['all_bins'][j]
+            E = f['all_energies'][j]
+            x, y, z = f['all_positions'][j]
+            dx, dy, dz = f['all_directions'][j]
+
+            b = tuple(bins)
+            events[i][b] = tots
+            labels[i] = [E, x, y, z, dx, dy, dz] 
+        yield events, labels
+
+def train_batches(batch_size):
+    indices = np.random.choice(range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3), NUM_GOOD_TEST_EVENTS_3, replace=False)
+    for k in range(0, NUM_GOOD_TEST_EVENTS_3, 100):
+        batch = indices[k: k + batch_size]
+        events = np.zeros((batch_size, 50, 13, 13, 18, 3))
+        labels = np.zeros((batch_size, NUM_CLASSES))
+        for i, j in enumerate(batch):
+            tots, bins = f['all_tots'][j], f['all_bins'][j]
+            E = f['all_energies'][j]
+            x, y, z = f['all_positions'][j]
+            dx, dy, dz = f['all_directions'][j]
+
+            b = tuple(bins)
+            events[i][b] = tots
+            labels[i] = [E, x, y, z, dx, dy, dz] 
+        yield events, labels
 
 if __name__ == "__main__":
-    evt = EVENT
-    dh = Data_handle()
-    event = dh.make_event(evt.hits, split_dom=False)
-    animate_event(event)
+        pass
