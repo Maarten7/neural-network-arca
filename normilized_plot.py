@@ -7,10 +7,9 @@ import importlib
 import matplotlib.pyplot as plt
 import math
 from mpl_toolkits.mplot3d import Axes3D
+from sklearn.metrics import confusion_matrix
 import itertools
 from helper_functions import *
-
-from sklearn.metrics import confusion_matrix
 
 model = import_model()
 title = model.title
@@ -19,44 +18,15 @@ pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, tit
 data_file = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
 predictions = pred_file['all_test_predictions'].value
 labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+energies = data_file['all_energies'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
 ll = np.argmax(labels, axis=1)
 lt = np.argmax(predictions, axis=1)
 eq = np.equal(ll, lt)
 
-def plot_confusion_matrix():
-    cm = confusion_matrix(ll, lt)
-    summ = np.sum(cm, axis=1, dtype=float)
-    summ = np.column_stack((summ,summ,summ))
-    cm = (cm / summ) * 100
+def energy_distribution(split):
+    energies = data_file['all_energies'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+    return hist_fill(np.log10(energies), split_false=split)
 
-    plt.imshow(cm, cmap=plt.cm.Blues)
-    plt.title('normalized confusion matrix')
-    #plt.colorbar()
-    tick_marks = np.arange(3)
-
-    classes = ['shower', 'track', 'K40']
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
-
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i,j], '.1f'), horizontalalignment='center', color='red')
-
-    plt.show()
-
-
-def make_list_from_txt(title):
-    file_handle = open(title, 'r')
-    data = []
-    for line in file_handle:
-        line = line.split('_')
-        try:
-            value = float(line[-1])
-            data.append(value)
-        except ValueError:
-            continue
-    return data   
 
 def hist_fill(list_value, only_extreme_output=False, k40=False, split_false=False):
     eg, ef, mg, mf  = [], [], [], []
@@ -112,20 +82,13 @@ def hist_fill(list_value, only_extreme_output=False, k40=False, split_false=Fals
     if not k40:
         return eg, ef, mg, mf
 
-def nhits_distribution(split):
-    nhits = data_file['all_num_hits'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
-    return hist_fill(np.log10(nhits), split_false=split)
 
-def energie_distribution(split):
-    energies = data_file['all_energies'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
-    return hist_fill(np.log10(energies), split_false=split)
-
-def output_distribution(split):
-    return hist_fill(predictions[np.where(labels == 1)], k40=True, split_false=split)
-
-def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=None): 
+def histogram(distribution, bins, split=True, xlabel = '', normed=False, domain=None): 
     if not xlabel: xlabel = distribution.__name__.split('_')[0]
     dist = distribution(split=split)
+    he = np.histogram(energies[np.where(ll == 0)], bins=bins)[0]
+    hm = np.histogram(energies[np.where(ll == 1)], bins=bins)[0]
+
     plot_list = []
     if len(dist) == 6 and not split: 
         eg, ef, mg, mf, kg, kf = dist
@@ -151,74 +114,27 @@ def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=N
     if len(dist) == 6 and split:
         eg, efm, efk, mg, mfe, mfk = dist
         fig, (ax1, ax2) = plt.subplots(1,2)
-        plot_list.append((ax1, efm, 'electron as muon'))
-        plot_list.append((ax1, efk, 'electron as k40'))
-        plot_list.append((ax2, mfe, 'muon as electron'))    
-        plot_list.append((ax2, mfk, 'muon as k40'))    
-    plot_list.append((ax1, eg, 'electron correct'))
-    plot_list.append((ax2, mg, 'muon correct'))    
+        plot_list.append((ax1, efm, 'electron as muon', he))
+        plot_list.append((ax1, efk, 'electron as k40', he))
+        plot_list.append((ax2, mfe, 'muon as electron', hm))    
+        plot_list.append((ax2, mfk, 'muon as k40', hm))    
+    plot_list.append((ax1, eg, 'electron correct', he))
+    plot_list.append((ax2, mg, 'muon correct', hm))    
 
-
-    for ax, data, label in reversed(plot_list):    
-        ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
+    summ = np.empty(40)
+    for ax, data, label, h in reversed(plot_list):    
+    
+        n, bins = np.histogram(data, bins=bins, range=domain, normed=normed)#, label=label, histtype='step')
+        n = n / h.astype(float)
+        ax.plot(bins[:-1], n, label=label, ls='steps')
+        summ += n
         ax.set_title(distribution.__name__ + ' ' + label.split()[0])
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Number events')
         ax.legend()
+    print summ
     plt.show()
         
-def plot_acc_cost():
-    path = PATH + "data/results/%s/" % title
-   
-    test_every = 10
-
-    fig, (ax1, ax2) = plt.subplots(1,2)
-    ax1.set_title('Cost/Loss as fuction of training epochs')
-    ax1.set_xlabel('Number of epochs')
-    ax1.set_ylabel('Cross entropy per event')
-    try:
-        data = make_list_from_txt(PATH + 'data/results/%s/cost_train.txt' % title)
-        epochs = len(data)
-        ax1.plot(data, label='train')
-    except IOError: 
-        pass
-    try:
-        data = make_list_from_txt(PATH + 'data/results/%s/cost_test.txt' % title)
-        ranger = range(epochs - 10 * len(data), epochs, test_every) 
-        ax1.plot(ranger, data, label='test')
-    except IOError: 
-        pass
-    ax1.legend()
-
-    try: 
-        data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % title)
-        ranger = range(epochs - len(data), epochs) 
-        ax2.plot(ranger, data, label='train')
-    except IOError:
-        pass 
-    try: 
-        data = make_list_from_txt(PATH + 'data/results/%s/acc_test.txt' % title)
-        ranger = range(epochs - 10 * len(data), epochs, test_every) 
-        ax2.plot(ranger, data, label='test')
-    except IOError:
-        pass 
-    ax2.set_xlim([0, epochs])
-    ax2.set_ylim([0, 1])
-    ax2.set_title('Accuracy on training sets')
-    ax2.legend()
-    ax2.set_xlabel('Number of epochs epochs')
-    ax2.set_ylabel('Accuracy')
-    plt.show()
-
 
 if __name__ == '__main__':
-    plot_acc_cost()
-    plot_confusion_matrix()
-#    histogram(output_distribution, bins=40, domain=(0,1))
-#    histogram(energie_distribution, bins=50, xlabel='$\log(E)$')
-#    histogram(nhits_distribution, bins=50, xlabel='$\log(n)$')
-#    
-#    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
-#    histogram(phi_distribution, bins=50, xlabel='$\phi$')
-#    positions()
-    pass 
+    histogram(energy_distribution, bins=40, xlabel='$\log(E)$')
