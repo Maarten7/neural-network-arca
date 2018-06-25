@@ -12,31 +12,26 @@ from helper_functions import *
 
 from sklearn.metrics import confusion_matrix
 
-model = sys.argv[1].replace('/', '.')[:-3]
-try:
-	model = importlib.import_module(model)
-	title = getattr(model, "title") 
-except ImportError:
-	title = 'three_classes_sum_tot'
+model = import_model()
+title = model.title
 
-#data_file = h5py.File(PATH + 'data/hdf5_files/events_and_labels_%s.hdf5' % title)
-#pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-#meta_file = h5py.File(PATH + 'data/hdf5_files/meta_data.hdf5')
-#predictions = pred_file['predictions']
-#labels = pred_file['labels']
-#ll = np.argmax(labels.value, axis=1)
-#lt = np.argmax(predictions.value, axis=1)
-#eq = np.equal(ll, lt)
+pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+data_file = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+predictions = pred_file['all_test_predictions'].value
+labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+ll = np.argmax(labels, axis=1)
+lt = np.argmax(predictions, axis=1)
+eq = np.equal(ll, lt)
 
 def plot_confusion_matrix():
     cm = confusion_matrix(ll, lt)
     summ = np.sum(cm, axis=1, dtype=float)
     summ = np.column_stack((summ,summ,summ))
-    cm = cm / summ
+    cm = (cm / summ) * 100
 
     plt.imshow(cm, cmap=plt.cm.Blues)
     plt.title('normalized confusion matrix')
-    plt.colorbar()
+    #plt.colorbar()
     tick_marks = np.arange(3)
 
     classes = ['shower', 'track', 'K40']
@@ -46,7 +41,7 @@ def plot_confusion_matrix():
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i,j], '.3f'), horizontalalignment='center', color='red')
+        plt.text(j, i, format(cm[i,j], '.1f'), horizontalalignment='center', color='red')
 
     plt.show()
 
@@ -118,38 +113,15 @@ def hist_fill(list_value, only_extreme_output=False, k40=False, split_false=Fals
         return eg, ef, mg, mf
 
 def nhits_distribution(split):
-    nhits = []
-    for root_file, _ in root_files(train=False, test=True):
-        nhits.extend(meta_file[root_file + 'n_hits'].value)
-    return hist_fill(nhits, split_false=split)
+    nhits = data_file['all_num_hits'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+    return hist_fill(np.log10(nhits), split_false=split)
 
 def energie_distribution(split):
-    energies = []
-    for root_file, _ in root_files(train=False, test=True):
-        energies.extend(np.log(meta_file[root_file + 'E'].value))
-
-    return hist_fill(energies, split_false=True)
-
-def theta_distribution(split):
-    thetas = []
-    for root_file, _ in root_files(train=False, test=True):
-        for dir in meta_file[root_file + 'directions'].value:
-            dx, dy, dz = dir
-            theta = np.arctan2(dz, math.sqrt(dx**2 + dy**2)) 
-            thetas.append(np.cos(theta))
-    return hist_fill(thetas, split_false=split) 
-
-def phi_distribution(split):
-    phis = []
-    for root_file, _ in root_files(train=False, test=True):
-        for dir in meta_file[root_file + 'directions'].value:
-            dx, dy, dz = dir
-            phi = np.arctan2(dy, dx) 
-            phis.append(phi) 
-    return hist_fill(phis, split_false=split) 
+    energies = data_file['all_energies'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+    return hist_fill(np.log10(energies), split_false=split)
 
 def output_distribution(split):
-    return hist_fill(predictions.value[np.where(labels.value == 1)], k40=True, split_false=split)
+    return hist_fill(predictions[np.where(labels == 1)], k40=True, split_false=split)
 
 def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=None): 
     if not xlabel: xlabel = distribution.__name__.split('_')[0]
@@ -188,10 +160,7 @@ def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=N
 
 
     for ax, data, label in reversed(plot_list):    
-	if host is 'rance':
-		ax.hist(data, bins=bins, range=domain, normed=normed, label=label, histtype='step')
-	else:
-		ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
+        ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
         ax.set_title(distribution.__name__ + ' ' + label.split()[0])
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Number events')
@@ -242,46 +211,14 @@ def plot_acc_cost():
     plt.show()
 
 
-def positions():
-    positions = []
-    for root_file, _ in root_files(train=False, test=True):
-        for pos in meta_file[root_file + 'positions'].value:
-            positions.append(pos)
-    egx, efx, mgx, mfx = [], [], [], []
-    egy, efy, mgy, mfy = [], [], [], []
-    for i in range(len(predictions)):
-        pr = predictions[i]
-        x, y, z = positions[i]
-        typ = ll[i]
-        pr = predictions[i][typ]
-        if eq[i]: # correct prediciont
-            if typ == 0 and 0.97 < pr < 1: # electon
-                egx.append(x)
-                egy.append(y)
-            elif typ == 1 and 0.97 < pr < 1: # muon
-                mgx.append(x)
-                mgy.append(y)
-        if not eq[i]: # incorrect prediction
-            if typ == 0 and 0 < pr < .03: # electron
-                efx.append(x)
-                efy.append(y)
-            elif typ == 1 and 0 < pr < .03: # electron 
-                mfx.append(x)
-                mfy.append(y)
-    plt.plot(egx, egy, 'g.')
-    plt.plot(efx, efy, 'r.')
-    plt.plot(mgx, mgy, 'g^')
-    plt.plot(mfx, mfy, 'r^')
-    plt.show()
-
 if __name__ == '__main__':
-    plot_acc_cost()
+#    plot_acc_cost()
+    plot_confusion_matrix()
 #    histogram(output_distribution, bins=40, domain=(0,1))
-#    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
-#    histogram(nhits_distribution, bins=100, domain=(0,200))
+    histogram(energie_distribution, bins=50, xlabel='$\log(E)$')
+    histogram(nhits_distribution, bins=50, xlabel='$\log(n)$')
 #    
 #    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')
 #    histogram(phi_distribution, bins=50, xlabel='$\phi$')
-#    plot_confusion_matrix()
 #    positions()
     pass 

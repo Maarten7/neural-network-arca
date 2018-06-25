@@ -116,9 +116,9 @@ def num_good_events(threshold):
 
         if 'K40' in evt_type:
             if any(num in root_file for num in ['13', '14', '15']):
-                tes[evt_type] += len(evt_type) 
+                tes[evt_type] += len(f) 
             else:
-                tra[evt_type] += len(evt_type) 
+                tra[evt_type] += len(f) 
 
         for evt in f:
             if len(evt.mc_hits) > threshold:
@@ -129,7 +129,6 @@ def num_good_events(threshold):
                     
     return tra, tes 
             
-#print num_good_events(3)  
 
 
 EventFile.read_timeslices = True
@@ -153,3 +152,8 @@ DIR_GOOD_TEST_EVENTS_3 = {'anueNC': 1906, 'numuCC': 3142, 'nueCC': 2803, 'anumuC
 NUM_GOOD_TRAIN_EVENTS_3 = sum(DIR_GOOD_TRAIN_EVENTS_3.values())
 NUM_GOOD_TEST_EVENTS_3 = sum(DIR_GOOD_TEST_EVENTS_3.values())
 NUM_GOOD_EVENTS_3 = NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3 #242345 + 2* 48048 + 2 * 3432  ==== 345305
+
+
+#tr= {'anueNC': 22866, 'numuCC': 38886, 'nueCC': 33337, 'anumuCC': 40807, 'anueCC': 33399, 'nueNC': 24971, 'nuK40': 48048, 'anuK40': 48048} 
+#te = {'anueNC': 5747, 'numuCC': 9487, 'nueCC': 8244, 'anumuCC': 10139, 'anueCC': 8140, 'nueNC': 6322, 'nuK40': 3*3432, 'anuK40': 3*3432}
+
