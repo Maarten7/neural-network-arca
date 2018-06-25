@@ -198,34 +198,27 @@ def animate_event(event_full):
     plt.show()
 
 f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
-def batches(batch_size):
-    indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
-    for k in range(0, NUM_GOOD_TRAIN_EVENTS_3, 100):
+def batches(batch_size, test=False, debug=False):
+    if debug:
+        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_DEBUG_EVENTS, replace=False)
+        num_events = NUM_DEBUG_EVENTS 
+    elif test:
+        indices = range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3)
+        num_events = NUM_GOOD_TEST_EVENTS_3
+    else:
+        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
+        num_events = NUM_GOOD_TRAIN_EVENTS_3
+
+    for k in range(0, num_events, batch_size):
         batch = indices[k: k + batch_size]
         events = np.zeros((batch_size, 50, 13, 13, 18, 3))
         labels = np.zeros((batch_size, 3))
         for i, j in enumerate(batch):
             tots, bins = f['all_tots'][j], f['all_bins'][j]
-            label = f['all_labels'][j]
-
             b = tuple(bins)
             events[i][b] = tots
-            labels[i] = label
-        yield events, labels
 
-def train_batches(batch_size):
-    indices = np.random.choice(range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3), NUM_GOOD_TEST_EVENTS_3, replace=False)
-    for k in range(0, NUM_GOOD_TEST_EVENTS_3, 100):
-        batch = indices[k: k + batch_size]
-        events = np.zeros((batch_size, 50, 13, 13, 18, 3))
-        labels = np.zeros((batch_size, 3))
-        for i, j in enumerate(batch):
-            tots, bins = f['all_tots'][j], f['all_bins'][j]
-            label = f['all_labels'][j]
-
-            b = tuple(bins)
-            events[i][b] = tots
-            labels[i] = label
+            labels[i] = f['all_labels'][j]
         yield events, labels
 
 if __name__ == "__main__":

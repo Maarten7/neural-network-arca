@@ -66,7 +66,7 @@ def test_model(sess):
     batch_size = 100 
 
     # loop over all data in batches
-    for events, labels in test_batches(batch_size=batch_size):
+    for events, labels in batches(batch_size=batch_size, test=True):
         # Train
         feed_dict = {model.x: events, model.y: labels} 
         c, a = sess.run([cost,  accuracy], feed_dict=feed_dict)
@@ -84,12 +84,12 @@ def train_model(sess, test=True):
         input test, boolean, default True, if True the accuracy and cost
                     of test set are calculated"""
     print 'Start training'
-    batch_size = 60 
+    batch_size = 120 
     for epoch in range(num_epochs):
         print "epoch", epoch 
         acc, epoch_loss = 0, 0
         #######################################################################
-        for events, labels in batches(batch_size=batch_size):
+        for events, labels in batches(batch_size=batch_size, debug=debug):
             # Train
             feed_dict = {model.x: events, model.y: labels} 
             _, c, a = sess.run([optimizer, cost, accuracy], feed_dict=feed_dict)
@@ -97,13 +97,13 @@ def train_model(sess, test=True):
             # Calculate loss and accuracy
             epoch_loss += c * batch_size 
             acc += a * batch_size 
-            
 
         # Save accuracy and loss/cost
         save_output(acc, epoch_loss)
 
         # test network and save weights
-        if test and epoch % 10 == 0: print 'Accuracy', test_model(sess)
+        if test and epoch % 20 == 0 and epoch != 0: 
+            test_model(sess)
         save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
         ########################################################################
     return epoch_loss
