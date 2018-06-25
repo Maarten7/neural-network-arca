@@ -14,6 +14,7 @@ model = import_model()
 title = model.title
 batches = model.batches
 
+t_start = time()
 debug = eval(sys.argv[2])
 num_epochs = 1000 if not debug else 2
 num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
@@ -88,15 +89,16 @@ def train_model(sess, test=True):
     for epoch in range(num_epochs):
         print "epoch", epoch 
         acc, epoch_loss = 0, 0
+
         #######################################################################
         for events, labels in batches(batch_size=batch_size, debug=debug):
             # Train
             feed_dict = {model.x: events, model.y: labels} 
-            _, c, a = sess.run([optimizer, cost, accuracy], feed_dict=feed_dict)
+            sess.run([optimizer], feed_dict=feed_dict)
 
             # Calculate loss and accuracy
-            epoch_loss += c * batch_size 
-            acc += a * batch_size 
+            #epoch_loss += c * batch_size 
+            #acc += a * batch_size 
 
         # Save accuracy and loss/cost
         save_output(acc, epoch_loss)
@@ -118,12 +120,12 @@ def main():
             saver.restore(sess, PATH + "weights/%s.ckpt" % title)
         except:
             print 'Initalize variables'
-        sess.run(tf.global_variables_initializer())
+            sess.run(tf.global_variables_initializer())
+        print 'start', time() - t_start
         train_model(sess, test=False)
  
 
 if __name__ == "__main__":
-    t_start = time()
     a = main()
     t_end = time()
     print 'runtime', str(datetime.timedelta(seconds=t_end - t_start)) 

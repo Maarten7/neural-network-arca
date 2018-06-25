@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib
 import h5py
+from time import time
 title = 'temporal'
 
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
@@ -213,6 +214,7 @@ def batches(batch_size, test=False, debug=False):
         batch = indices[k: k + batch_size]
         events = np.zeros((batch_size, 50, 13, 13, 18, 3))
         labels = np.zeros((batch_size, 3))
+        
         for i, j in enumerate(batch):
             tots, bins = f['all_tots'][j], f['all_bins'][j]
             b = tuple(bins)

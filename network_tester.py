@@ -9,7 +9,7 @@ import h5py
 import sys
 import importlib
 import matplotlib.pyplot as plt
-
+from time import time
 from helper_functions import *
 
 model = import_model()
@@ -31,13 +31,16 @@ def writer():
 
         ##########################################################################
         print "Testing"
-        with h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'w') as hfile:
+        with h5py.File(PATH + 'data/results/%s/test_result_fake_%s.hdf5' % (title, title), 'w') as hfile:
             dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, 3), dtype='float')
             i = 0
             for events, labels in model.batches(150, test=True):
+                ts = time()
                 feed_dict = {x: events, y: labels}
                 p = sess.run(prediction, feed_dict=feed_dict)
                 dset_pred[i: i + 150] = p
 
                 print i, NUM_GOOD_TEST_EVENTS_3
                 i += 150
+                print '\tprediction', (time() - ts) / 150
+writer()
