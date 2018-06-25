@@ -147,6 +147,54 @@ class Data_handle(object):
         if code == 'K40':
             return np.array([0, 0, 1])
 
+def show_event(event):
+    """Shows 3D plot of evt"""
+    assert np.shape(event) == (13, 13, 18)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    x, y, z = event.nonzero()
+    k = event[event.nonzero()]
+    #sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=plt.Normalize(0, 100))
+    #sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'))#, norm=plt.Normalize(0, 100))
+    sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=matplotlib.colors.LogNorm(0.1, 350))
+    ax.set_xlim([0,13])
+    ax.set_ylim([0,13])
+    ax.set_zlim([0,18])
+    ax.set_xlabel('x index')
+    ax.set_ylabel('y index')
+    ax.set_zlabel('z index')
+    plt.title('TTOT on DOM')
+    fig.colorbar(sc)
+    plt.show()
+
+def show_event2d(event):
+    """Shows 3D plot of evt"""
+    assert np.shape(event) == (13, 13, 18)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    x, y, z = event.nonzero()
+    ax.scatter(*np.ones((13,13)).nonzero())
+    sc = ax.scatter(x, y)
+    ax.set_xlim([-1,13])
+    ax.set_ylim([-1,13])
+    ax.set_xlabel('x index')
+    ax.set_ylabel('y index')
+    plt.axes().set_aspect('equal' )
+    plt.show()
+
+def show_event_pos(hits):
+    det = Det(PATH + 'data/km3net_115.det')
+    plt.plot(0,0)
+    plt.axes().set_aspect('equal' )
+    xs, ys = [], []
+    for hit in hits:
+        pmt = det.get_pmt(hit.dom_id, hit.channel_id)
+        dom = det.get_dom(pmt)
+        xs.append(dom.pos.x)
+        ys.append(dom.pos.y)
+    print xs, ys 
+    plt.plot(xs, ys, '.')
+    plt.show()
 EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
 NUM_CLASSES = 3
 

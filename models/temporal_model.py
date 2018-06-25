@@ -133,7 +133,7 @@ class Data_handle(object):
         t1 = max(ts)
         dt = t1 - t0 
 
-        tbin_size = 400
+        tbin_size = 50 
         num_tbins = np.int(np.ceil(dt / tbin_size))
         channels = 3 if split_dom else 1
         event = np.zeros((num_tbins, 13, 13, 18, channels))
