@@ -41,19 +41,3 @@ def writer():
 
                 print i, NUM_GOOD_TEST_EVENTS_3
                 i += 150
-            
-
-    ##########################################################################
-f = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-q = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
-
-j = NUM_GOOD_TRAIN_EVENTS_3
-good, fout = 0, 0
-for i in range(len(f['all_test_predictions'])):
-    if np.argmax(f['all_test_predictions'][i]) == np.argmax(q['all_labels'][j]):
-        good += 1
-    else:
-        fout += 1
-    j += 1
-
-print good / float(good + fout)
