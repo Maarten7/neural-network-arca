@@ -110,55 +110,39 @@ def num_good_events(threshold):
     tes = {typ: 0 for typ in EVT_TYPES}
     EventFile.read_timeslices = True
     for root_file, evt_type in root_files(test=True):
+        print root_file        
         f = EventFile(root_file)
         f.use_tree_index_for_mc_reading = True
 
-        if 'K40' not in evt_type:
-            continue
+        if 'K40' in evt_type:
+            if any(num in root_file for num in ['13', '14', '15']):
+                tes[evt_type] += len(evt_type) 
+            else:
+                tra[evt_type] += len(evt_type) 
 
         for evt in f:
-            if '13' in root_file:
-                tes[evt_type] += 1
-            else:
-                tra[evt_type] += 1
+            if len(evt.mc_hits) > threshold:
+                if any(num in root_file for num in ['13', '14', '15']):
+                    tes[evt_type] += 1
+                else:
+                    tra[evt_type] += 1
                     
     return tra, tes 
             
-                
+#print num_good_events(3)  
 
 
 EventFile.read_timeslices = True
 #eccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nueCC_1.evt.root'
-mccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_numuCC_1.evt.root'
+#mccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_numuCC_1.evt.root'
 #k40f = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nuK40_1.evt.root'
-##
 #f = EventFile(k40f)
 #f.use_tree_index_for_mc_reading = True
-#fi = iter(f)
-#evt = fi.next()
-#hit = event.hits[0]
-#det = Det(PATH + 'data/km3net_115.det')
-#pmt = det.get_pmt(hit.dom_id, hit.channel_id)
-#dom = det.get_dom(pmt)
-#lenf = len(f)
-#f.set_index(lenf - 8)
-#ecc1 = copy(f.evt)
-#
-#f = EventFile(mccf)
-#f.use_tree_index_for_mc_reading = True
-#f.set_index(3846)
-#mcc1 = copy(f.evt)
-#
-#f = EventFile(k40f)
-#f.use_tree_index_for_mc_reading = True
-#lenf = len(f)
-#f.set_index(lenf - 2)
-#k401 = copy(f.evt)
 
 
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
 DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
-NUM_DEBUG_EVENTS = 55227
+NUM_DEBUG_EVENTS = 3000 # first it was 55227
 NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
 NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
 NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
