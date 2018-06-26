@@ -35,7 +35,7 @@ def print_tensor(x):
     #print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
     pass
 
-x = tf.placeholder(tf.float32, [None, 50, 13, 13, 18, 3], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
 
 nodes =   {"l1": 25,
@@ -58,7 +58,6 @@ def cnn(x):
     print_tensor(x)
     out_time_bin = []
     time_bins = x._shape_as_list()[1]
-    #time_bins = tf.shape(x)[1]
     for i in range(time_bins):
         input = x[:,i,:,:,:,:] 
         conv1 = tf.nn.relu(
@@ -198,7 +197,48 @@ def animate_event(event_full):
     #writer = animation.writers['ffmpeg']
     plt.show()
 
-f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
+
+def random_slice(len_evt):
+    # if random filling is longer than 100 time slices than split in to parts
+    i, ii = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3, size=2)
+    len_ran = 376 - len_evt
+    sec = len_ran
+
+    # first part
+    if len_ran > 100:
+        tots = f['all_tots'][i]
+        bins = f['all_bins'][i]
+        
+        j = np.random.randint(0, 240 - 100)
+        ind = np.where(np.logical_and(j < bins[0], bins[0] < j + 100))
+
+        rtots1 = tots[ind]
+        
+        offset = len_evt - bins[0][ind][0] 
+        rb1 = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
+
+        sec = len_ran - 100
+
+    # second part
+    tots = f['all_tots'][ii]
+    bins = f['all_bins'][ii]
+    j = np.random.randint(0, 240 - sec)
+    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + sec))
+    rtots = tots[ind]
+
+    offset = len_evt - bins[0][ind][0] 
+    if len_ran > 100: offset += 100
+
+    rb = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
+
+    if len_ran > 100:
+        rtots = np.append(rtots1, rtots)
+        for i in range(5):
+            rb[i] = np.append(rb1[i], rb[i])
+
+    return tuple(rb), rtots 
+
 def batches(batch_size, test=False, debug=False):
     if debug:
         indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_DEBUG_EVENTS, replace=False)
@@ -212,16 +252,22 @@ def batches(batch_size, test=False, debug=False):
 
     for k in range(0, num_events, batch_size):
         batch = indices[k: k + batch_size]
-        events = np.zeros((batch_size, 50, 13, 13, 18, 3))
+        events = np.zeros((batch_size, 376, 13, 13, 18, 3))
         labels = np.zeros((batch_size, 3))
         
         for i, j in enumerate(batch):
+            labels[i] = f['all_labels'][j]
             tots, bins = f['all_tots'][j], f['all_bins'][j]
+            len_evt = bins[0][-1]
             b = tuple(bins)
             events[i][b] = tots
 
-            labels[i] = f['all_labels'][j]
+            rb, rtots = random_slice(len_evt)
+            
+
+            events[i][rb] = rtots
+
         yield events, labels
 
 if __name__ == "__main__":
-        pass
+    pass
