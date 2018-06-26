@@ -68,12 +68,9 @@ def num_events(threshold):
 
 
 EventFile.read_timeslices = True
-#eccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nueCC_1.evt.root'
-#mccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_numuCC_1.evt.root'
-#k40f = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nuK40_1.evt.root'
-#f = EventFile(k40f)
-#f.use_tree_index_for_mc_reading = True
-
+eccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nueCC_5.evt.root'
+f = EventFile(eccf)
+f.use_tree_index_for_mc_reading = True
 
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
 DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
