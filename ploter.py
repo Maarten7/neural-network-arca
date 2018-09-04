@@ -248,11 +248,22 @@ def plot_cost_versions():
     title = 'three_classes_sum_tot'
     data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % title)
     epochs = len(data)
-    plt.plot(data, label='train')
-    title = title + '_v2_no_softmax' 
-    data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % title)
+    plt.plot(data, label='cost v1, extra softmax')
+
+    titlel = title + '_v2_no_softmax' 
+    data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % titlel)
     epochs = len(data)
-    plt.plot(data, label='train v2')
+    plt.plot(data, label='cost v2, no extra softmax')
+
+    titlep = title + '_batches' 
+    data = make_list_from_txt(PATH + 'data/results/%s/acc_train.txt' % titlep)
+    epochs = len(data)
+    plt.plot(data, label='cost v2, no extra softmax, batches')
+
+    plt.title('accuracy different convolutional networks')
+    plt.ylabel('accuracy')
+    plt.xlabel('training epochs')
+    plt.legend()
     plt.show()
     
 
@@ -291,8 +302,8 @@ def positions():
 if __name__ == '__main__':
 #    plot_acc_cost()
 #    plot_acc_cost('_v2_no_softmax')
-    plot_acc_cost('_batches')
-#    plot_cost_versions()
+#    plot_acc_cost('_batches')
+    plot_cost_versions()
 #    histogram(output_distribution, bins=40, domain=(0,1))
 #    histogram(energie_distribution, bins=100, xlabel='$\log(E)$')
 #    histogram(nhits_distribution, bins=100, domain=(0,200))

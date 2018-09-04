@@ -19,13 +19,13 @@ cnn = model.cnn
 
 # Train data
 f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
-# Write file
-z = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'w')
 
 # Tensorboard and saving variables
-output = cnn(x)
-prediction = tf.nn.softmax(output)
-saver = tf.train.Saver()
+with tf.name_scope(title):
+    with tf.name_scope("Model"):
+        output = cnn(x)
+        prediction = tf.nn.softmax(output)
+    saver = tf.train.Saver()
 
 # Session
 config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
@@ -44,11 +44,15 @@ with tf.Session(config=config) as sess:
             p = sess.run(prediction, feed_dict=feed_dict)
             t11 = time()
             
-            print '\t', t11 - t00 / 100.
+            print '\t', (t11 - t00) / 100.
 
             dset_p[i: i + 100] = p
 
         t1 = time()
-        time_per_event = (t1 - t0)/ NUM_TRAIN_EVENTS
-        print time_per_event
+        print NUM_TEST_EVENTS
+        print NUM_GOOD_TEST_EVENTS_3
+        print len(range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3))
+        print (t1 - t0)/ NUM_TEST_EVENTS
+        print (t1 - t0)/ NUM_GOOD_TEST_EVENTS_3
+        print (t1 - t0)/ len(range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3))
     ##########################################################################

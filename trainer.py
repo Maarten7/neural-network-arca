@@ -63,9 +63,7 @@ def save_output(acc, cost, test=False):
 
 def test_model(sess):
     print 'Start testing'
-
-    acc = 0 
-    loss = 0
+    acc, loss = 0, 0 
     batch_size = 2000
     for events, labels in model.train_batches(batch_size):
         feed_dict = {model.x: events, model.y: labels}
@@ -74,7 +72,6 @@ def test_model(sess):
         loss += c * batch_size 
 
     save_output(acc, loss, test=True)
-    return acc
 
 
 def train_model(sess, test=True):
@@ -82,10 +79,8 @@ def train_model(sess, test=True):
     batch_size = 1500
     for epoch in range(num_epochs):
         print "epoch", epoch 
-        acc = 0 
-        epoch_loss = 0
+        acc, epoch_loss = 0, 0
 
-        batch_size = 100 
         #######################################################################
         for events, labels in model.batches(batch_size):
             feed_dict = {model.x: events, model.y: labels} 
@@ -98,7 +93,6 @@ def train_model(sess, test=True):
         if test and epoch % 10 == 0: test_model(sess)
         save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title + '_batches')
         ########################################################################
-    return epoch_loss
 
 
 def main():
