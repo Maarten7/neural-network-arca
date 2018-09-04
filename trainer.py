@@ -1,14 +1,12 @@
 ###################################
 # Maarten Post
+# trainer.py
 ###################################
-""" This neural network should take the detector slices and with shared weights
-map them to an array or matrix and than this one goes to the output"""
 import tensorflow as tf
 import numpy as np
 import datetime
 import h5py
 import sys
-import importlib
 from time import time
 from helper_functions import * 
 
