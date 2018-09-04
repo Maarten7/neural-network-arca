@@ -35,7 +35,7 @@ def print_tensor(x):
     #print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
     pass
 
-x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, 377, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
 
 nodes =   {"l1": 25,
@@ -226,7 +226,6 @@ def random_slice(len_evt):
     j = np.random.randint(0, 240 - sec)
     ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + sec))
     rtots = tots[ind]
-
     offset = len_evt - bins[0][ind][0] 
     if len_ran > 100: offset += 100
 
@@ -252,7 +251,7 @@ def batches(batch_size, test=False, debug=False):
 
     for k in range(0, num_events, batch_size):
         batch = indices[k: k + batch_size]
-        events = np.zeros((batch_size, 376, 13, 13, 18, 3))
+        events = np.zeros((batch_size, 377, 13, 13, 18, 3))
         labels = np.zeros((batch_size, 3))
         
         for i, j in enumerate(batch):
@@ -262,10 +261,9 @@ def batches(batch_size, test=False, debug=False):
             b = tuple(bins)
             events[i][b] = tots
 
-            rb, rtots = random_slice(len_evt)
-            
-
-            events[i][rb] = rtots
+            if len_evt != 376:
+                rb, rtots = random_slice(len_evt)
+                events[i][rb] = rtots
 
         yield events, labels
 
