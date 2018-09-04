@@ -85,7 +85,7 @@ def train_model(sess, test=True):
         input test, boolean, default True, if True the accuracy and cost
                     of test set are calculated"""
     print 'Start training'
-    batch_size = 120 
+    batch_size = 10 
     for epoch in range(num_epochs):
         print "epoch", epoch 
         acc, epoch_loss = 0, 0
@@ -115,13 +115,13 @@ def main():
     # Session
     print 'Start session'
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
+    #config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         try:
             saver.restore(sess, PATH + "weights/%s.ckpt" % title)
         except:
             print 'Initalize variables'
             sess.run(tf.global_variables_initializer())
-        print 'start', time() - t_start
         train_model(sess, test=False)
  
 

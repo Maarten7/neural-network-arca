@@ -15,10 +15,13 @@ from sklearn.metrics import confusion_matrix
 model = import_model()
 title = model.title
 
+#pred_file = h5py.File(PATH + 'data/results/%s/test_result_vakantiepauze_%s.hdf5' % (title, title), 'r')
 pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-data_file = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+data_file = h5py.File(PATH + 'data/hdf5_files/tbin400_all_events_labels_meta_%s.hdf5' % title, 'r')
+#data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 predictions = pred_file['all_test_predictions'].value
-labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+#labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3 : NUM_GOOD_TRAIN_EVENTS_3 + len(predictions)]
 ll = np.argmax(labels, axis=1)
 lt = np.argmax(predictions, axis=1)
 eq = np.equal(ll, lt)
@@ -28,6 +31,7 @@ def plot_confusion_matrix():
     summ = np.sum(cm, axis=1, dtype=float)
     summ = np.column_stack((summ,summ,summ))
     cm = (cm / summ) * 100
+    err_cm = cm * np.sqrt( 1. / cm + 1. / summ) 
 
     plt.imshow(cm, cmap=plt.cm.Blues)
     plt.title('normalized confusion matrix')
@@ -41,7 +45,7 @@ def plot_confusion_matrix():
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i,j], '.1f'), horizontalalignment='center', color='red')
+        plt.text(j, i, "{0:.1f} $\pm$ {1:.1f} %".format(cm[i,j], err_cm[i,j]), horizontalalignment='center', color='red')
 
     plt.show()
 
@@ -160,7 +164,10 @@ def histogram(distribution, bins, split=True, xlabel = '', normed=True, domain=N
 
 
     for ax, data, label in reversed(plot_list):    
-        ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
+        h, b = np.histogram(data, bins=bins, range=domain, density=normed)
+        #ax.hist(data, bins=bins, range=domain, density=normed, label=label, histtype='step')
+        print 1/np.sqrt(h)
+        ax.errorbar(x=b[:-1], y=h, yerr=1/np.sqrt(h), range=domain, label=label)
         ax.set_title(distribution.__name__ + ' ' + label.split()[0])
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Number events')
@@ -212,10 +219,10 @@ def plot_acc_cost():
 
 
 if __name__ == '__main__':
-    plot_acc_cost()
+#    plot_acc_cost()
     plot_confusion_matrix()
 #    histogram(output_distribution, bins=40, domain=(0,1))
-#    histogram(energie_distribution, bins=50, xlabel='$\log(E)$')
+#    histogram(energie_distribution, bins=50, xlabel='$\log(E)$', normed=False)
 #    histogram(nhits_distribution, bins=50, xlabel='$\log(n)$')
 #    
 #    histogram(theta_distribution, bins=50, xlabel=r'$\cos(\theta)$')

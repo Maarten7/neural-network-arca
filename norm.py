@@ -14,81 +14,94 @@ from helper_functions import *
 model = import_model()
 title = model.title
 
+"PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
+
 pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-data_file = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+data_file = h5py.File(PATH + 'data/hdf5_files/tbin400_all_events_labels_meta_%s.hdf5' % title, 'r')
 predictions = pred_file['all_test_predictions'].value
 labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
-energies = data_file['all_energies'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
 ll = np.argmax(labels, axis=1)
 lt = np.argmax(predictions, axis=1)
 eq = np.equal(ll, lt)
 
+def plot_normelized_with_error(bins, tot_dis, par_dis, ax, label):
+    error =  par_dis / tot_dis.astype(float)   * np.sqrt( 1./ par_dis + 1./tot_dis)
+    ax.errorbar(bins[:-1], par_dis / tot_dis.astype(float), label=label, fmt='.', yerr=error) 
+#############################################################################################################
+# ENERGIE PLOT
+#############################################################################################################
 dens = False
+energies = data_file['all_energies'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+fig, (ax1, ax2) = plt.subplots(1,2)
+################ shower
 he, be = spectrum_elec = np.histogram(np.log10(energies[np.where(ll == 0)]), bins=40, density=dens)
 range=(be.min(), be.max())
 hee, bee = elec_as_elec = np.histogram(np.log10(energies[np.where( (ll == 0) & (lt == 0) )]), bins=be, range=range, density=dens)
 hem, bem = elec_as_muon = np.histogram(np.log10(energies[np.where( (ll == 0) & (lt == 1) )]), bins=be, range=range, density=dens)
 hek, bek = elec_as_k40  = np.histogram(np.log10(energies[np.where( (ll == 0) & (lt == 2) )]), bins=be, range=range, density=dens)
 
-fig, (ax1, ax2) = plt.subplots(1,2)
-ax1.plot(be[:-1], hee / he.astype(float), label='shower as shower', ls='steps')
-ax1.plot(be[:-1], hem / he.astype(float), label='shower as track', ls='steps')
-ax1.plot(be[:-1], hek / he.astype(float), label='shower as k40', ls='steps')
+plot_normelized_with_error(be, he, hee, ax1, label='shower as shower')
+plot_normelized_with_error(be, he, hem, ax1, label='shower as track')
+plot_normelized_with_error(be, he, hek, ax1, label='shower as k40')
+ax1.set_ylim(0,1)
 ax1.legend()
 ax1.set_title('classification shower')
-ax1.set_ylabel('Probebility to classify')
+ax1.set_ylabel('Probability to classify')
 ax1.set_xlabel('log E')
-#################################################################################################################################
-hm, bm = spectrum_muon = np.histogram(np.log10(energies[np.where(ll == 1)]), bins=40, density=dens)
-range=(be.min(), be.max())
-hme, bme = elec_as_elec = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 0) )]), bins=be, range=range, density=dens)
-hmm, bmm = elec_as_muon = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 1) )]), bins=be, range=range, density=dens)
-hmk, bmk = elec_as_k40  = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 2) )]), bins=be, range=range, density=dens)
 
-ax2.plot(be[:-1], hmm / hm.astype(float), label='track as track', ls='steps')
-ax2.plot(be[:-1], hme / hm.astype(float), label='track as shower', ls='steps')
-ax2.plot(be[:-1], hmk / hm.astype(float), label='track as k40', ls='steps')
+################# track
+hm, bm = spectrum_muon = np.histogram(np.log10(energies[np.where(ll == 1)]), bins=40, density=dens)
+range=(bm.min(), bm.max())
+hme, bme = muon_as_elec = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 0) )]), bins=bm, range=range, density=dens)
+hmm, bmm = muon_as_muon = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 1) )]), bins=bm, range=range, density=dens)
+hmk, bmk = muon_as_k40  = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 2) )]), bins=bm, range=range, density=dens)
+
+plot_normelized_with_error(bm, hm, hmm, ax2, label='track as track')
+plot_normelized_with_error(bm, hm, hme, ax2, label='track as shower')
+plot_normelized_with_error(bm, hm, hmk, ax2, label='track as k40')
+ax2.set_ylim(0,1)
 ax2.legend()
 ax2.set_title('classification track')
-ax2.set_ylabel('Probebility to classify')
+ax2.set_ylabel('Probability to classify')
 ax2.set_xlabel('log E')
+#
 plt.show()
 
-#################################################################################################################################
-#################################################################################################################################
-#################################################################################################################################
-#################################################################################################################################
-#################################################################################################################################
-energies = data_file['all_num_hits'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
+#############################################################################################################
+# N HIT PLOT 
+#############################################################################################################
+num_hits = data_file['all_num_hits'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
 dens = False
-he, be = spectrum_elec = np.histogram(np.log10(energies[np.where(ll == 0)]), bins=40, density=dens)
-range=(be.min(), be.max())
-hee, bee = elec_as_elec = np.histogram(np.log10(energies[np.where( (ll == 0) & (lt == 0) )]), bins=be, range=range, density=dens)
-hem, bem = elec_as_muon = np.histogram(np.log10(energies[np.where( (ll == 0) & (lt == 1) )]), bins=be, range=range, density=dens)
-hek, bek = elec_as_k40  = np.histogram(np.log10(energies[np.where( (ll == 0) & (lt == 2) )]), bins=be, range=range, density=dens)
-
 fig, (ax1, ax2) = plt.subplots(1,2)
-ax1.plot(be[:-1], hee / he.astype(float), label='shower as shower', ls='steps')
-ax1.plot(be[:-1], hem / he.astype(float), label='shower as track', ls='steps')
-ax1.plot(be[:-1], hek / he.astype(float), label='shower as k40', ls='steps')
+###################### shower
+he, be = spectrum_elec = np.histogram(np.log10(num_hits[np.where(ll == 0)]), bins=40, density=dens)
+range=(be.min(), be.max())
+hee, bee = muon_as_elec = np.histogram(np.log10(num_hits[np.where( (ll == 0) & (lt == 0) )]), bins=be, range=range, density=dens)
+hem, bem = muon_as_muon = np.histogram(np.log10(num_hits[np.where( (ll == 0) & (lt == 1) )]), bins=be, range=range, density=dens)
+hek, bek = muon_as_k40  = np.histogram(np.log10(num_hits[np.where( (ll == 0) & (lt == 2) )]), bins=be, range=range, density=dens)
+
+plot_normelized_with_error(be, he, hee, ax1, label='shower as shower')
+plot_normelized_with_error(be, he, hem, ax1, label='shower as track')
+plot_normelized_with_error(be, he, hek, ax1, label='shower as k40')
+ax1.set_ylim(0,1)
 ax1.legend()
 ax1.set_title('classification shower')
-ax1.set_ylabel('Probebility to classify')
+ax1.set_ylabel('Probability to classify')
 ax1.set_xlabel('log num hits')
-#################################################################################################################################
-hm, bm = spectrum_muon = np.histogram(np.log10(energies[np.where(ll == 1)]), bins=40, density=dens)
-range=(be.min(), be.max())
-hme, bme = elec_as_elec = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 0) )]), bins=be, range=range, density=dens)
-hmm, bmm = elec_as_muon = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 1) )]), bins=be, range=range, density=dens)
-hmk, bmk = elec_as_k40  = np.histogram(np.log10(energies[np.where( (ll == 1) & (lt == 2) )]), bins=be, range=range, density=dens)
+###################### track
+hm, bm = spectrum_muon = np.histogram(np.log10(num_hits[np.where(ll == 1)]), bins=40, density=dens)
+range=(bm.min(), bm.max())
+hme, bme = elec_as_elec = np.histogram(np.log10(num_hits[np.where( (ll == 1) & (lt == 0) )]), bins=bm, range=range, density=dens)
+hmm, bmm = elec_as_muon = np.histogram(np.log10(num_hits[np.where( (ll == 1) & (lt == 1) )]), bins=bm, range=range, density=dens)
+hmk, bmk = elec_as_k40  = np.histogram(np.log10(num_hits[np.where( (ll == 1) & (lt == 2) )]), bins=bm, range=range, density=dens)
 
-ax2.plot(be[:-1], hmm / hm.astype(float), label='track as track', ls='steps')
-ax2.plot(be[:-1], hme / hm.astype(float), label='track as shower', ls='steps')
-ax2.plot(be[:-1], hmk / hm.astype(float), label='track as k40', ls='steps')
+plot_normelized_with_error(bm, hm, hmm, ax2, label='track as track')
+plot_normelized_with_error(bm, hm, hme, ax2, label='track as shower')
+plot_normelized_with_error(bm, hm, hmk, ax2, label='track as k40')
+ax2.set_ylim(0,1)
 ax2.legend()
 ax2.set_title('classification track')
 ax2.set_label('Probebility to classify')
 ax2.set_xlabel('log num hits')
+#
 plt.show()
-if __name__ == '__main__':
-    pass
