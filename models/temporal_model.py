@@ -55,6 +55,8 @@ biases =  {"l1": bias(nodes["l1"]),
            "l4": bias(nodes["l4"])}
 
 def cnn(x):
+    """ input: event tensor numpy shape 377, 18, 18, 13, 3
+        output: label prediction shape 3 (one hot encoded)"""
     print_tensor(x)
     out_time_bin = []
     time_bins = x._shape_as_list()[1]
@@ -133,7 +135,7 @@ class Data_handle(object):
         t1 = max(ts)
         dt = t1 - t0 
 
-        tbin_size = 50 
+        tbin_size = 50
         num_tbins = np.int(np.ceil(dt / tbin_size))
         channels = 3 if split_dom else 1
         event = np.zeros((num_tbins, 13, 13, 18, channels))
@@ -163,7 +165,6 @@ class Data_handle(object):
         non = event.nonzero()
         return event[non], np.array(non)
 
-    
     def make_labels(self, code):
         """ Makes one hot labels form evt_type code"""
         if code < 4:
@@ -252,10 +253,10 @@ def batches(batch_size, test=False, debug=False):
     for k in range(0, num_events, batch_size):
         batch = indices[k: k + batch_size]
         events = np.zeros((batch_size, 377, 13, 13, 18, 3))
-        labels = np.zeros((batch_size, 3))
-        
+        labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
             labels[i] = f['all_labels'][j]
+
             tots, bins = f['all_tots'][j], f['all_bins'][j]
             len_evt = bins[0][-1]
             b = tuple(bins)
