@@ -35,7 +35,7 @@ def print_tensor(x):
     pass
 
 x = tf.placeholder(tf.float32, [None, 377, 13, 13, 18, 3], name="X_placeholder")
-y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
+y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
 
 nodes =   {"l1": 25,
            "l2": 35,
