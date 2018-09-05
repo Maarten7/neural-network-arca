@@ -73,12 +73,12 @@ def train_model(sess, test=True):
         input test, boolean, default True, if True the accuracy and cost
                     of test set are calculated"""
     print 'Start training'
-    batch_size = 60 
+    batch_size = 10 
     for epoch in range(num_epochs):
         print "epoch", epoch 
         epoch_loss = 0
         #######################################################################
-        for events, labels in batches(batch_size=batch_size):
+        for events, labels in batches(batch_size=batch_size, debug=debug):
             # Train
             feed_dict = {model.x: events, model.y: labels} 
             _, c = sess.run([optimizer, cost], feed_dict=feed_dict)
@@ -90,7 +90,8 @@ def train_model(sess, test=True):
         save_output(epoch_loss)
 
         # test network and save weights
-        if test and epoch % 10 == 0: print 'Accuracy', test_model(sess)
+        if test and epoch % 20 == 0 and epoch != 0: 
+            test_model(sess)
         save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
         ########################################################################
     return epoch_loss
@@ -100,12 +101,13 @@ def main():
     # Session
     print 'Start session'
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
+    #config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         try:
             saver.restore(sess, PATH + "weights/%s.ckpt" % title)
         except:
             print 'Initalize variables'
-        sess.run(tf.global_variables_initializer())
+            sess.run(tf.global_variables_initializer())
         train_model(sess, test=False)
  
 
