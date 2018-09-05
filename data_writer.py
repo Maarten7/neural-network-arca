@@ -105,4 +105,4 @@ def data_writer(title):
                     i += 1
             
             ####################################################
-data_writer(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title)
+data_writer(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title)
