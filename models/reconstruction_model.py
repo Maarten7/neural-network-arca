@@ -34,7 +34,7 @@ def print_tensor(x):
     #print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
     pass
 
-x = tf.placeholder(tf.float32, [None, 50, 13, 13, 18, 3], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, 377, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
 
 nodes =   {"l1": 25,
@@ -54,10 +54,12 @@ biases =  {"l1": bias(nodes["l1"]),
            "l4": bias(nodes["l4"])}
 
 def cnn(x):
+    """ input: event tensor numpy shape 377, 18, 18, 13, 3
+        output: Energy, position, direction prediction in shape 7
+        energy(1), position(3) and direction(3)"""
     print_tensor(x)
     out_time_bin = []
     time_bins = x._shape_as_list()[1]
-    #time_bins = tf.shape(x)[1]
     for i in range(time_bins):
         input = x[:,i,:,:,:,:] 
         conv1 = tf.nn.relu(
@@ -133,7 +135,7 @@ class Data_handle(object):
         t1 = max(ts)
         dt = t1 - t0 
 
-        tbin_size = 400
+        tbin_size = 50
         num_tbins = np.int(np.ceil(dt / tbin_size))
         channels = 3 if split_dom else 1
         event = np.zeros((num_tbins, 13, 13, 18, channels))
@@ -163,6 +165,7 @@ class Data_handle(object):
         non = event.nonzero()
         return event[non], np.array(non)
 
+    
 def animate_event(event_full):
     """Shows 3D plot of evt"""
     fig = plt.figure()
@@ -187,32 +190,78 @@ def animate_event(event_full):
     #writer = animation.writers['ffmpeg']
     plt.show()
 
+f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 
+def random_slice(len_evt):
+    # if random filling is longer than 100 time slices than split in to parts
+    i, ii = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3, size=2)
+    len_ran = 376 - len_evt
+    sec = len_ran
 
-f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
-def batches(batch_size, test=False):
-    if not test:
+    # first part
+    if len_ran > 100:
+        tots = f['all_tots'][i]
+        bins = f['all_bins'][i]
+        
+        j = np.random.randint(0, 240 - 100)
+        ind = np.where(np.logical_and(j < bins[0], bins[0] < j + 100))
+
+        rtots1 = tots[ind]
+        
+        offset = len_evt - bins[0][ind][0] 
+        rb1 = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
+
+        sec = len_ran - 100
+
+    # second part
+    tots = f['all_tots'][ii]
+    bins = f['all_bins'][ii]
+    j = np.random.randint(0, 240 - sec)
+    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + sec))
+    rtots = tots[ind]
+    offset = len_evt - bins[0][ind][0] 
+    if len_ran > 100: offset += 100
+
+    rb = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
+
+    if len_ran > 100:
+        rtots = np.append(rtots1, rtots)
+        for i in range(5):
+            rb[i] = np.append(rb1[i], rb[i])
+
+    return tuple(rb), rtots 
+
+def batches(batch_size, test=False, debug=False):
+    if debug:
+        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_DEBUG_EVENTS, replace=False)
+        num_events = NUM_DEBUG_EVENTS 
+    elif test:
+        indices = range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3)
+        num_events = NUM_GOOD_TEST_EVENTS_3
+    else:
         indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
         num_events = NUM_GOOD_TRAIN_EVENTS_3
-    else:
-        indices = np.random.choice(range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3), NUM_GOOD_TEST_EVENTS_3, replace=False)
-        num_events = NUM_GOOD_TEST_EVENTS_3
-    
-    for k in range(0, num_events, 100):
+
+    for k in range(0, num_events, batch_size):
         batch = indices[k: k + batch_size]
-        events = np.zeros((batch_size, 50, 13, 13, 18, 3))
+        events = np.zeros((batch_size, 377, 13, 13, 18, 3))
         labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
-            tots, bins = f['all_tots'][j], f['all_bins'][j]
             E = f['all_energies'][j]
             x, y, z = f['all_positions'][j]
             dx, dy, dz = f['all_directions'][j]
+            labels[i] = [E, x, y, z, dx, dy, dz] 
 
+            tots, bins = f['all_tots'][j], f['all_bins'][j]
+            len_evt = bins[0][-1]
             b = tuple(bins)
             events[i][b] = tots
-            labels[i] = [E, x, y, z, dx, dy, dz] 
+
+            if len_evt != 376:
+                rb, rtots = random_slice(len_evt)
+                events[i][rb] = rtots
+
         yield events, labels
 
-
 if __name__ == "__main__":
-        pass
+    pass
