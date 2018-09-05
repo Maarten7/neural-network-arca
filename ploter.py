@@ -17,8 +17,7 @@ title = model.title
 
 #pred_file = h5py.File(PATH + 'data/results/%s/test_result_vakantiepauze_%s.hdf5' % (title, title), 'r')
 pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-data_file = h5py.File(PATH + 'data/hdf5_files/tbin400_all_events_labels_meta_%s.hdf5' % title, 'r')
-#data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
+data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 predictions = pred_file['all_test_predictions'].value
 #labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
 labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3 : NUM_GOOD_TRAIN_EVENTS_3 + len(predictions)]
