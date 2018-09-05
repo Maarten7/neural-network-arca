@@ -14,7 +14,6 @@ model = import_model()
 title = model.title
 batches = model.batches
 
-t_start = time()
 debug = eval(sys.argv[2])
 num_epochs = 1000 if not debug else 2
 num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
@@ -126,6 +125,7 @@ def main():
  
 
 if __name__ == "__main__":
+    t_start = time()
     a = main()
     t_end = time()
     print 'runtime', str(datetime.timedelta(seconds=t_end - t_start)) 
