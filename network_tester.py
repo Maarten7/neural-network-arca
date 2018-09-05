@@ -20,7 +20,8 @@ cnn = model.cnn
 # Tensorboard and saving variables
 with tf.name_scope(title):
     with tf.name_scope("Model"):
-        prediction = tf.nn.softmax(cnn(x))
+        output = cnn(x)
+        prediction = tf.nn.softmax(output)
     saver = tf.train.Saver()
 
 # Session
@@ -32,13 +33,15 @@ def writer():
         ##########################################################################
         print "Testing"
         with h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'w') as hfile:
-            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, 3), dtype='float')
+            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, model.NUM_CLASSES), dtype='float')
             i = 0
             batch_size = 10
             for events, labels in model.batches(batch_size, test=True):
                 ts = time()
                 feed_dict = {x: events, y: labels}
-                p = sess.run(prediction, feed_dict=feed_dict)
+                #p = sess.run(prediction, feed_dict=feed_dict)
+                p = sess.run(output, feed_dict=feed_dict)
+
                 dset_pred[i: i + batch_size] = p
 
                 print i, NUM_GOOD_TEST_EVENTS_3
