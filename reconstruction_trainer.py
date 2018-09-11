@@ -23,7 +23,7 @@ num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
 # Compute cross entropy as loss function
 with tf.name_scope(title):
     with tf.name_scope("Model"):
-        output = model.cnn(model.x)
+        output = model.km3nnet(model.x)
     with tf.name_scope("Xentropy"):
         cost = tf.reduce_sum(tf.square(output - model.y))
     # Train network with AdamOptimizer

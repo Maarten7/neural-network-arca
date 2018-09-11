@@ -54,32 +54,37 @@ biases =  {"l1": bias(nodes["l1"]),
            "l3": bias(nodes["l3"]),
            "l4": bias(nodes["l4"])}
 
-def cnn(x):
+def cnn(input_slice):
+    conv1 = tf.nn.relu(
+        conv3d(input_slice, weights["l1"]) + biases["l1"])
+
+    conv2 = tf.nn.relu(
+        conv3d(conv1, weights["l2"]) + biases["l2"])
+
+    conv2 = maxpool3d(conv2)
+
+    elements = np.prod(conv2._shape_as_list()[1:])
+
+    fc = tf.reshape(conv2, [-1, elements])
+    
+    fc = tf.nn.sigmoid(
+        tf.matmul(fc, weights["l3"]) + biases["l3"])
+
+    fc = tf.nn.sigmoid(
+        tf.matmul(fc, weights["l4"]) + biases["l4"])
+
+    return fc
+
+def km3nnet(x):
     """ input: event tensor numpy shape 377, 18, 18, 13, 3
         output: label prediction shape 3 (one hot encoded)"""
     print_tensor(x)
     out_time_bin = []
     time_bins = x._shape_as_list()[1]
+    # loop over 377 time slices
     for i in range(time_bins):
-        input = x[:,i,:,:,:,:] 
-        conv1 = tf.nn.relu(
-            conv3d(input, weights["l1"]) + biases["l1"])
-
-        conv2 = tf.nn.relu(
-            conv3d(conv1, weights["l2"]) + biases["l2"])
-
-        conv2 = maxpool3d(conv2)
-
-        elements = np.prod(conv2._shape_as_list()[1:])
-
-        fc = tf.reshape(conv2, [-1, elements])
-        
-        fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights["l3"]) + biases["l3"])
-
-        fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights["l4"]) + biases["l4"])
-
+        input_slice = x[:,i,:,:,:,:] 
+        fc = cnn(input_slice)
         out_time_bin.append(fc)
 
     c = tf.concat(out_time_bin, 1)
@@ -251,6 +256,8 @@ def batches(batch_size, test=False, debug=False):
         num_events = NUM_GOOD_TRAIN_EVENTS_3
 
     for k in range(0, num_events, batch_size):
+        if k + batch_size > num_events:
+            batch_size = k + batch_size - num_events
         batch = indices[k: k + batch_size]
         events = np.zeros((batch_size, 377, 13, 13, 18, 3))
         labels = np.zeros((batch_size, NUM_CLASSES))
