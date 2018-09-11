@@ -23,7 +23,7 @@ num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
 # Compute cross entropy as loss function
 with tf.name_scope(title):
     with tf.name_scope("Model"):
-        output = model.cnn(model.x)
+        output = model.km3nnet(model.x)
         prediction = tf.nn.softmax(output)
     with tf.name_scope("Xentropy"):
         cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=model.y))
@@ -58,56 +58,31 @@ def save_output(acc, cost, test=False):
     with open(PATH + 'data/results/%s/cost_%s.txt' % (title, mode), 'a') as f:
         f.write(str(cost_per_event) + '\n')
 
-def test_model(sess):
-    """ test model on test data set
-        input sess: a tensor flow session"""
-    acc = 0 
-    epoch_loss = 0
-    batch_size = 100 
-
-    # loop over all data in batches
-    for events, labels in batches(batch_size=batch_size, test=True):
-        # Train
-        feed_dict = {model.x: events, model.y: labels} 
-        c, a = sess.run([cost,  accuracy], feed_dict=feed_dict)
-
-        # Calculate loss and accuracy
-        epoch_loss += c * batch_size
-        acc += a * batch_size 
-
-    save_output(acc, epoch_loss, test=True)
-    return acc
-
-def train_model(sess, test=True):
+def train_model(sess):
     """ trains model,
         input sess, a tensorflow session.
         input test, boolean, default True, if True the accuracy and cost
                     of test set are calculated"""
     print 'Start training'
-    batch_size = 10 
+    batch_size = 20 
     for epoch in range(num_epochs):
         print "epoch", epoch 
-        acc, epoch_loss = 0, 0
 
         #######################################################################
+        batch = 0
         for events, labels in batches(batch_size=batch_size, debug=debug):
+            batch += 1
             # Train
             feed_dict = {model.x: events, model.y: labels} 
             sess.run([optimizer], feed_dict=feed_dict)
 
-            # Calculate loss and accuracy
-            #epoch_loss += c * batch_size 
-            #acc += a * batch_size 
-
-        # Save accuracy and loss/cost
-        save_output(acc, epoch_loss)
-
-        # test network and save weights
-        if test and epoch % 20 == 0 and epoch != 0: 
-            test_model(sess)
+            if batch % 6000 == 0:
+                # Save weights every 2000 events
+                save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
+                print '\t save at', batch
+        
         save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
         ########################################################################
-    return epoch_loss
 
 
 def main():
@@ -121,11 +96,8 @@ def main():
         except:
             print 'Initalize variables'
             sess.run(tf.global_variables_initializer())
-        train_model(sess, test=False)
+        train_model(sess)
  
 
 if __name__ == "__main__":
-    t_start = time()
     a = main()
-    t_end = time()
-    print 'runtime', str(datetime.timedelta(seconds=t_end - t_start)) 
