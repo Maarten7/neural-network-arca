@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib
 import h5py
-from time import time
-title = 'temporal'
 
+title = 'temporal'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 
@@ -31,12 +30,8 @@ def bias(shape):
     b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
     return b
 
-def print_tensor(x):
-    #print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
-    pass
-
 x = tf.placeholder(tf.float32, [None, 377, 13, 13, 18, 3], name="X_placeholder")
-y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
+y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
 
 nodes =   {"l1": 25,
            "l2": 35,
@@ -55,6 +50,7 @@ biases =  {"l1": bias(nodes["l1"]),
            "l4": bias(nodes["l4"])}
 
 def cnn(input_slice):
+    """ input: event tensor numpy shape 1, 13, 13, 18, 3"""
     conv1 = tf.nn.relu(
         conv3d(input_slice, weights["l1"]) + biases["l1"])
 
@@ -72,17 +68,14 @@ def cnn(input_slice):
 
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l4"]) + biases["l4"])
-
     return fc
 
 def km3nnet(x):
     """ input: event tensor numpy shape 377, 18, 18, 13, 3
         output: label prediction shape 3 (one hot encoded)"""
-    print_tensor(x)
     out_time_bin = []
-    time_bins = x._shape_as_list()[1]
     # loop over 377 time slices
-    for i in range(time_bins):
+    for i in range(x._shape_as_list()[1]):
         input_slice = x[:,i,:,:,:,:] 
         fc = cnn(input_slice)
         out_time_bin.append(fc)
@@ -90,15 +83,16 @@ def km3nnet(x):
     c = tf.concat(out_time_bin, 1)
     lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1)
     outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=tf.float32)
-    prediction = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
-    return prediction
+    output = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+    return output 
 
 class Data_handle(object):
-    def __init__(self, norm=100):
+    def __init__(self, tot_mode=True, norm=100):
         self.lines = self.lines()
         self.z_index = self.z_index()
         self.det = Det(PATH + 'data/km3net_115.det')
         self.NORM_FACTOR = float(norm) 
+        self.TOT_MODE = tot_mode
 
     def lines(self):
         return np.array([
@@ -130,7 +124,7 @@ class Data_handle(object):
         i, j = np.where(self.lines == line)
         return np.int(i), np.int(j)
 
-    def make_event(self, hits, split_dom=True):
+    def make_event(self, hits):
         "Take aa_net hits and put them in cube numpy arrays"
         ts = []
         for hit in hits:
@@ -152,7 +146,7 @@ class Data_handle(object):
             
             t_index = np.int(np.floor(t / tbin_size))
 
-            channel_id = hit.channel_id if split_dom else 0
+            channel_id = hit.channel_id
             pmt = self.det.get_pmt(hit.dom_id, channel_id)
             direction = np.array([pmt.dir.x, pmt.dir.y, pmt.dir.z])
             dom = self.det.get_dom(pmt)
@@ -179,29 +173,6 @@ class Data_handle(object):
         else:
             return np.array([0, 0, 1])
 
-def animate_event(event_full):
-    """Shows 3D plot of evt"""
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    event_full = event_full.reshape((-1,13,13,18))
-
-    ims = []
-    for event in event_full:
-        x, y, z = event.nonzero()
-        k = event[event.nonzero()]
-        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=matplotlib.colors.LogNorm(0.1, 350))
-        ims.append([sc])
-    ax.set_xlim([0,13])
-    ax.set_ylim([0,13])
-    ax.set_zlim([0,18])
-    ax.set_xlabel('x index')
-    ax.set_ylabel('y index')
-    ax.set_zlabel('z index')
-    plt.title('TTOT on DOM')
-    fig.colorbar(sc)
-    ani = animation.ArtistAnimation(fig, ims)
-    #writer = animation.writers['ffmpeg']
-    plt.show()
 
 f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 
@@ -262,7 +233,7 @@ def batches(batch_size, test=False, debug=False):
             # get event bins and tots
             labels[i] = f['all_labels'][j]
             tots, bins = f['all_tots'][j], f['all_bins'][j]
-            
+
             # make random padding
             len_evt = bins[0][-1] + 1
             len_pad_tot = 377 - len_evt
@@ -286,6 +257,30 @@ def batches(batch_size, test=False, debug=False):
                 events[i][bins_back]  = tots_back
 
         yield events, labels
+        
+def animate_event(event_full):
+    """Shows 3D plot of evt"""
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    event_full = event_full.reshape((-1,13,13,18))
+
+    ims = []
+    for event in event_full:
+        x, y, z = event.nonzero()
+        k = event[event.nonzero()]
+        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=matplotlib.colors.LogNorm(0.1, 350))
+        ims.append([sc])
+    ax.set_xlim([0,13])
+    ax.set_ylim([0,13])
+    ax.set_zlim([0,18])
+    ax.set_xlabel('x index')
+    ax.set_ylabel('y index')
+    ax.set_zlabel('z index')
+    plt.title('TTOT on DOM')
+    fig.colorbar(sc)
+    ani = animation.ArtistAnimation(fig, ims)
+    #writer = animation.writers['ffmpeg']
+    plt.show()
 
 if __name__ == "__main__":
     pass

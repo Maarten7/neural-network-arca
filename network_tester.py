@@ -2,7 +2,9 @@
 # Maarten Post
 # network tester
 ###################################
-
+""" This program takes a trained NN and runs it over the test set.
+    Then it writes all the output to file. The output is the softmax threevector
+    for each evetn"""
 import tensorflow as tf
 import numpy as np
 import h5py
@@ -30,12 +32,15 @@ def writer():
 
         ##########################################################################
         print "Testing"
+        # open result file
         with h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (model.title, model.title), 'w') as hfile:
             dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, model.NUM_CLASSES), dtype='float')
+
             i = 0
             batch_size = 30 
             for events, labels in model.batches(batch_size, test=True):
                 ts = time()
+
                 feed_dict = {model.x: events, model.y: labels}
                 p = sess.run(prediction, feed_dict=feed_dict)
                 #p = sess.run(output, feed_dict=feed_dict)

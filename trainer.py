@@ -10,8 +10,8 @@ import sys
 from time import time
 from helper_functions import * 
 
-# import neural network model
-model, debug = import_model()
+# import neural network model and debug mode
+model, debug = import_model(only_model=False)
 
 num_epochs = 1000 if not debug else 2
 num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
@@ -45,9 +45,7 @@ def train_model(sess):
         print "epoch", epoch 
 
         #######################################################################
-        batch = 0
-        for events, labels in model.batches(batch_size=batch_size, debug=debug):
-            batch += 1
+        for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
             # Train
             feed_dict = {model.x: events, model.y: labels} 
             sess.run([optimizer], feed_dict=feed_dict)
