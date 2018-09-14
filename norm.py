@@ -145,12 +145,16 @@ def histogram_trigger(data_histogram, xlabel):
 #    fig.savefig('trigger_' + xlabel + '.pdf', dpi=500)
     plt.show()
 
+def events_triggerd_as_K40():
+    print 'K3NNET  ', 100 * np.sum((l_pred != 2) & (l_true == 2)) / float(np.sum( l_true == 2)) 
+    print 'JTrigger', 100 / float(np.sum( l_true == 2))
+
 #histogram_classified_as(np.log10(energies), 'log E', Rxy < 250)
 #histogram_classified_as(np.log10(energies), 'log E', ((250 < Rxy) & ( Rxy < 500)))
 #histogram_classified_as(np.log10(energies), 'log E', Rxy > 500)
 #histogram_classified_as(np.log10(energies), 'log E', outward)
 #histogram_classified_as(np.log10(energies), 'log E', inward)
-histogram_classified_as(np.log10(num_hits), 'log N hits')
+#histogram_classified_as(np.log10(num_hits), 'log N hits')
 #histogram_classified_as(afstand, 'R meters')
 #histogram_classified_as(np.log10(afstand), 'log R ')
 #histogram_classified_as(np.cos(theta), 'cos theta')
@@ -162,6 +166,5 @@ histogram_classified_as(np.log10(num_hits), 'log N hits')
 
 #histogram_trigger(np.log10(energies), 'log E')
 #histogram_trigger(np.log10(num_hits), 'log num hits')
-plot_confusion_matrix()
-print 100 * np.sum((l_pred != 2) & (l_true == 2)) / float(np.sum( l_true == 2)) 
-print 100 / float(np.sum( l_true == 2))
+#plot_confusion_matrix()
+events_triggerd_as_K40()

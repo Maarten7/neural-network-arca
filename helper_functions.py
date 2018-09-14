@@ -28,11 +28,12 @@ def save_output(cost, acc=0, epoch=0):
     with open(PATH + 'data/results/%s/epoch_cost_acc.txt' % (model.title), 'a') as f:
         f.write(str(epoch) + ',' + str(cost) + ',' str(acc) + '\n')
 
-def import_model():
+def import_model(only_model=True):
     """ imports a python module from command line. 
         Also import debug mode default is False"""        
     model = sys.argv[1].replace('/', '.')[:-3]
     model = importlib.import_module(model)
+    if only_model: return model
     try:
         debug = eval(sys.argv[2])
         return model, debug
@@ -86,10 +87,10 @@ def num_events(threshold):
     return tra, tes 
 
 
-EventFile.read_timeslices = True
-eccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nueCC_5.evt.root'
-f = EventFile(eccf)
-f.use_tree_index_for_mc_reading = True
+#EventFile.read_timeslices = True
+#eccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nueCC_5.evt.root'
+#f = EventFile(eccf)
+#f.use_tree_index_for_mc_reading = True
 
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
 DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
@@ -98,7 +99,7 @@ NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
 NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
 NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
 
-
+# results of running num_events(3)
 DIR_GOOD_TRAIN_EVENTS_3 = {'anueNC': 22866, 'numuCC': 38886, 'nueCC': 33337, 'anumuCC': 40807, 'anueCC': 33399, 'nueNC': 24971, 'nuK40': 41184, 'anuK40': 41184}
 DIR_GOOD_TEST_EVENTS_3 = {'anueNC': 5747, 'numuCC': 9487, 'nueCC': 8244, 'anumuCC': 10139, 'anueCC': 8140, 'nueNC': 6322, 'nuK40': 10296, 'anuK40': 10296}
 

@@ -1,14 +1,15 @@
 from ROOT import *
 import aa
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 from helper_functions import *
 
 title = 'three_classes_sum_tot'
+EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
+NUM_CLASSES = 3
 
 def conv3d(x, W):
     return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
-
 
 def maxpool3d(x):
     # size of window         movement of window as you slide about
@@ -17,67 +18,71 @@ def maxpool3d(x):
         strides=[1, 2, 2, 2, 1],
         padding='SAME')
 
-def weights(shape):
+def weight(shape):
     w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
     return w
-
 
 def bias(shape):
     b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
     return b
 
-x = tf.placeholder(tf.float32, [None, 1, 13, 13, 18], name="X_placeholder")
-y = tf.placeholder(tf.float32, [None, 3], name="Y_placeholder")
+x = tf.placeholder(tf.float32, [None, 13, 13, 18, 3], name="X_placeholder")
+y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
 
-def cnn(x):
-    x = tf.reshape(x, shape=[-1, 13, 13, 18, 1]) 
-    print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
-    with tf.name_scope("Conv1"):
-        num_layers_1 = 35 
-        conv1 = tf.nn.relu(
-            conv3d(x, weights([6, 6, 6, 1, num_layers_1])) + bias(num_layers_1))
-        print 'conv1\t\t', conv1.shape
-        conv1 = maxpool3d(conv1)
-        print 'conv1 mxpl\t', conv1.shape
+nodes =   {"l1": 25,
+           "l2": 35,
+           "l3": 80,
+           "l4": 40,
+           "l5": 20} 
+           
+weights = {"l1": weight([4, 4, 4, 3, nodes["l1"]]),
+           "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
+           "l3": weight([15435, nodes["l3"]]),
+           "l4": weight([nodes["l3"], nodes["l4"]])}
 
-    with tf.name_scope("Conv2"):
-        num_layers_2 = 60
-        conv2 = tf.nn.relu(
-            conv3d(conv1, weights([3, 3, 3, num_layers_1, num_layers_2])) + bias(num_layers_2))
-        print 'conv2\t\t', conv2.shape
-        conv2 = maxpool3d(conv2)
-        print 'conv2 mxpt\t', conv2.shape
+biases =  {"l1": bias(nodes["l1"]),
+           "l2": bias(nodes["l2"]),
+           "l3": bias(nodes["l3"]),
+           "l4": bias(nodes["l4"])}
 
-    with tf.name_scope("Conv3"):
-        num_layers_3 = 15 
-        conv3 = tf.nn.relu(
-            conv3d(conv2, weights([2, 2, 2, num_layers_2, num_layers_3])) + bias(num_layers_3))
-        print 'conv3\t\t', conv3.shape
-        conv3 = maxpool3d(conv3)
-        print 'conv3 mxpl\t', conv3.shape
-    
+def cnn(input_slice):
+    """ input: event tensor numpy shape 1, 13, 13, 18, 3"""
+    conv1 = tf.nn.relu(
+        conv3d(input_slice, weights["l1"]) + biases["l1"])
+
+    conv2 = tf.nn.relu(
+        conv3d(conv1, weights["l2"]) + biases["l2"])
+
+    conv2 = maxpool3d(conv2)
+
+    conv3 = tf.nn.relu(
+        conv3d(conv2, weights["l3"] + biases["l3"]))
+
     elements = np.prod(conv3._shape_as_list()[1:])
     fc = tf.reshape(conv3, [-1, elements])
-    print 'fc\t\t', fc.shape
-    with tf.name_scope("FullyC1"):
-        fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights([elements, 1028])) + bias(1028))
-    print 'fc l1\t\t', fc.shape
-    with tf.name_scope("FullyC2"):
-        fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights([1028, 60])) + bias(60))
-        print 'fc l2\t\t', fc.shape
-        labels = 3
-        output = tf.nn.softmax(tf.matmul(fc, weights([60, labels])) + bias(labels))
-        print 'output\t\t', output.shape
+    
+    fc = tf.nn.sigmoid(
+        tf.matmul(fc, weights["l4"]) + biases["l4"])
+
+    fc = tf.nn.sigmoid(
+        tf.matmul(fc, weights["l5"]) + biases["l5"])
+    return fc
+
+def km3nnet(x):
+    x = tf.reshape(x, shape=[-1, 13, 13, 18, 3])
+
+    fc  = cnn(x) 
+
+    output = tf.matmul(fc, weights([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
     return output
 
 class Data_handle(object):
-    def __init__(self, norm=100):
+    def __init__(self, tot_mode=True, norm=100):
         self.lines = self.lines()
         self.z_index = self.z_index()
         self.det = Det(PATH + 'data/km3net_115.det')
         self.NORM_FACTOR = float(norm) 
+        self.TOT_MODE = tot_mode
 
     def lines(self):
         return np.array([
@@ -111,10 +116,11 @@ class Data_handle(object):
 
     def make_event(self, hits):
         "Take aa_net hits and put them in cube numpy arrays"
-        event = np.zeros((1, 13, 13, 18))
+        event = np.zeros((13, 13, 18, 3))
         for hit in hits:
-            tot = hit.tot
+            tot = hit.tot if self.TOT_MODE else 1
             pmt = self.det.get_pmt(hit.dom_id, hit.channel_id)
+            direction = np.array([pmt.dir.x, pmt.dir.y, pmt.dir.z])
             dom = self.det.get_dom(pmt)
             line_id = dom.line_id
             # also valid
@@ -123,29 +129,44 @@ class Data_handle(object):
             z = self.z_index[round(dom.pos.z)] 
             y, x = self.line_to_index(dom.line_id)
 
-            event[0, x, y, z] += tot / self.NORM_FACTOR 
-        return event
+            event[x, y, z] += direction * tot / self.NORM_FACTOR 
+        non = event.nonzero()
+        return event[non], np.array(non)
 
-    def add_hit_to_event(self, event, hit):
-        tot = hit.tot
-        pmt = self.det.get_pmt(hit.dom_id, hit.channel_id)
-        dom = self.det.get_dom(pmt)
-        line_id = dom.line_id
-
-        z = self.z_index[round(dom.pos.z)]
-        y, x = self.line_to_index(dom.line_id)
-
-        event[0, x, y, z] += tot / self.NORM_FACTOR
-        return event
-    
     def make_labels(self, code):
-        """ Makes one hot labels form evt_type str"""
-        if code == 'eCC' or code == 'eNC':
+        """ Makes one hot labels form evt_type code"""
+        if code < 4:
             return np.array([1, 0, 0])
-        if code == 'mCC' or code == 'muCC':
+        elif code < 6:
             return np.array([0, 1, 0])
-        if code == 'K40':
+        else:
             return np.array([0, 0, 1])
+
+
+f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+def batches(batch_size, test=False, debug=False):
+    if debug:
+        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_DEBUG_EVENTS, replace=False)
+        num_events = NUM_DEBUG_EVENTS 
+    elif test:
+        indices = range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3)
+        num_events = NUM_GOOD_TEST_EVENTS_3
+    else:
+        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
+        num_events = NUM_GOOD_TRAIN_EVENTS_3
+
+    for k in range(0, num_events, batch_size):
+        if k + batch_size > num_events:
+            batch_size = k + batch_size - num_events
+        batch = indices[k: k + batch_size]
+        events = np.zeros((batch_size, 13, 13, 18, 3))
+        labels = np.zeros((batch_size, NUM_CLASSES))
+        for i, j in enumerate(batch):
+            # get event bins and tots
+            labels[i] = f['all_labels'][j]
+            tots, bins = f['all_tots'][j], f['all_bins'][j]
+            events[i][tuple(bins)] = tots 
+        yield events, labels
 
 def show_event(event):
     """Shows 3D plot of evt"""
@@ -195,21 +216,6 @@ def show_event_pos(hits):
     print xs, ys 
     plt.plot(xs, ys, '.')
     plt.show()
-EVT_TYPES = ['eCC', 'eNC', 'muCC', 'K40']
-NUM_CLASSES = 3
 
 if __name__ == "__main__":
-    cnn(x)
-#    dh = Data_handle()
-#    ecc1e = dh.make_event(ecc1.hits)
-#    mcc1e = dh.make_event(mcc1.hits)
-#    k401e = dh.make_event(k401.hits)
-#    
-#    #show_event_pos(EVENT.hits)
-#    show_event(ecc1e[0])
-#    show_event(mcc1e[0])
-#    show_event(k401e[0])
-
-    #show_event(ecc2e[0])
-    #show_event(mcc2e[0])
-    #show_event(k402e[0])
+    pass
