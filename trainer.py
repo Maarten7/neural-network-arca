@@ -10,11 +10,12 @@ import sys
 from time import time
 from helper_functions import * 
 
+# import neural network model
 model = import_model()
 title = model.title
 batches = model.batches
-
 debug = eval(sys.argv[2])
+
 num_epochs = 1000 if not debug else 2
 num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
 

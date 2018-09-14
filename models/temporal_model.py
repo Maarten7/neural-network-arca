@@ -207,6 +207,7 @@ f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % t
 
 def random_slice(len_evt):
     # if random filling is longer than 100 time slices than split in to parts
+    # 240 sortest event? > 376 - 240 = 137 logest 
     i, ii = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3, size=2)
     len_ran = 376 - len_evt
     sec = len_ran
@@ -225,7 +226,7 @@ def random_slice(len_evt):
         rb1 = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
 
         sec = len_ran - 100
-
+    print sec
     # second part
     tots = f['all_tots'][ii]
     bins = f['all_bins'][ii]
@@ -242,7 +243,7 @@ def random_slice(len_evt):
         for i in range(5):
             rb[i] = np.append(rb1[i], rb[i])
 
-    return tuple(rb), rtots 
+    return rb, rtots 
 
 def batches(batch_size, test=False, debug=False):
     if debug:
@@ -266,14 +267,50 @@ def batches(batch_size, test=False, debug=False):
 
             tots, bins = f['all_tots'][j], f['all_bins'][j]
             len_evt = bins[0][-1]
+            bins[0] += (377 - len_evt - 1)
             b = tuple(bins)
             events[i][b] = tots
 
             if len_evt != 376:
                 rb, rtots = random_slice(len_evt)
+                rb[0] -= len_evt 
+                rb = tuple(rb)
                 events[i][rb] = rtots
 
         yield events, labels
 
 if __name__ == "__main__":
-    pass
+    batch_size = 3
+    k = 0
+    batch = [0, 1, 2] 
+    events = np.zeros((batch_size, 377, 13, 13, 18, 3))
+    labels = np.zeros((batch_size, NUM_CLASSES))
+    for i, j in enumerate(batch):
+        labels[i] = f['all_labels'][j]
+
+        tots, bins = f['all_tots'][j], f['all_bins'][j]
+        len_evt = bins[0][-1]
+
+        len_pad_tot = 377 - len_evt
+        pad_front = np.random.randint(0, len_pad_tot)
+        pad_back = pad_front + len_evt
+
+        len_pad_front = pad_front
+        len_pad_back= 377 - pad_back
+        print 'pads\t', pad_front, pad_back
+        print 'len pads\t', len_evt, len_pad_front, len_pad_back
+        print 'tot_len\t', len_evt + len_pad_front + len_pad_back
+
+        bins[0] += pad_front
+        b = tuple(bins)
+        events[i][b] = tots
+
+        if len_evt != 376:
+            rf, rtotsf = random_slice(377 - pad_front)
+            rb, rtotsb = random_slice(377 - len_pad_back)
+
+            rb[0] -= pad_back 
+            rf = tuple(rf)
+            rb = tuple(rb)
+            events[i][rf] = rtotsf
+            events[i][rb] = rtotsb

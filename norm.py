@@ -18,7 +18,7 @@ dens = False
 "PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
 
 # hdf5 files met (meta)data
-pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
+pred_file = h5py.File(PATH + 'data/results/%s/_test_result_%s.hdf5' % (title, title), 'r')
 data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 trigger_file = h5py.File(PATH + 'data/hdf5_files/JTrigger_trigger.hdf5', 'r')
 
@@ -47,6 +47,28 @@ def plot_normelized_with_error(bins, tot_dis, par_dis, ax, label):
     ax.plot(bins[:-1], par_dis / tot_dis.astype(float), label=label, drawstyle='steps') 
     ax.fill_between(bins[:-1], par_dis / tot_dis.astype(float) - error, par_dis / tot_dis.astype(float) + error, alpha=0.1, step='pre') 
 
+def plot_confusion_matrix():
+    cm = confusion_matrix(l_true, l_pred)
+    summ = np.sum(cm, axis=1, dtype=float)
+    summ = np.column_stack((summ,summ,summ))
+    cm = (cm / summ) * 100
+    err_cm = cm * np.sqrt( 1. / cm + 1. / summ) 
+
+    plt.imshow(cm, cmap=plt.cm.Blues)
+    plt.title('normalized confusion matrix')
+    #plt.colorbar()
+    tick_marks = np.arange(3)
+
+    classes = ['shower', 'track', 'K40']
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, "{0:.1f} $\pm$ {1:.1f} %".format(cm[i,j], err_cm[i,j]), horizontalalignment='center', color='red')
+
+    plt.show()
 
 def histogram_classified_as(data_histogram, xlabel, split=True):
     fig, (ax1, ax2) = plt.subplots(1,2)
@@ -103,6 +125,7 @@ afstand = np.sqrt(np.sum(positions ** 2, axis=1))
 theta = np.arctan2(directions[:,2],np.sqrt(np.sum(directions[:,0:2]**2, axis=1)))
 phi = np.arctan2(directions[:,1], directions[:,0]) 
 inward = np.sum(positions * directions, axis=1) < 0
+outward = np.sum(positions * directions, axis=1) > 0
 Rxy = np.sqrt(np.sum(positions[:,0:2] ** 2, axis=1))
 
 
@@ -123,7 +146,11 @@ def histogram_trigger(data_histogram, xlabel):
     plt.show()
 
 #histogram_classified_as(np.log10(energies), 'log E', Rxy < 250)
-#histogram_classified_as(np.log10(num_hits), 'log N hits')
+#histogram_classified_as(np.log10(energies), 'log E', ((250 < Rxy) & ( Rxy < 500)))
+#histogram_classified_as(np.log10(energies), 'log E', Rxy > 500)
+#histogram_classified_as(np.log10(energies), 'log E', outward)
+#histogram_classified_as(np.log10(energies), 'log E', inward)
+histogram_classified_as(np.log10(num_hits), 'log N hits')
 #histogram_classified_as(afstand, 'R meters')
 #histogram_classified_as(np.log10(afstand), 'log R ')
 #histogram_classified_as(np.cos(theta), 'cos theta')
@@ -135,5 +162,6 @@ def histogram_trigger(data_histogram, xlabel):
 
 #histogram_trigger(np.log10(energies), 'log E')
 #histogram_trigger(np.log10(num_hits), 'log num hits')
-
-print len( (l_pred != 2) & (l_true == 2))
+plot_confusion_matrix()
+print 100 * np.sum((l_pred != 2) & (l_true == 2)) / float(np.sum( l_true == 2)) 
+print 100 / float(np.sum( l_true == 2))

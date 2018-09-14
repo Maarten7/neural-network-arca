@@ -25,28 +25,6 @@ ll = np.argmax(labels, axis=1)
 lt = np.argmax(predictions, axis=1)
 eq = np.equal(ll, lt)
 
-def plot_confusion_matrix():
-    cm = confusion_matrix(ll, lt)
-    summ = np.sum(cm, axis=1, dtype=float)
-    summ = np.column_stack((summ,summ,summ))
-    cm = (cm / summ) * 100
-    err_cm = cm * np.sqrt( 1. / cm + 1. / summ) 
-
-    plt.imshow(cm, cmap=plt.cm.Blues)
-    plt.title('normalized confusion matrix')
-    #plt.colorbar()
-    tick_marks = np.arange(3)
-
-    classes = ['shower', 'track', 'K40']
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
-
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, "{0:.1f} $\pm$ {1:.1f} %".format(cm[i,j], err_cm[i,j]), horizontalalignment='center', color='red')
-
-    plt.show()
 
 
 def make_list_from_txt(title):
