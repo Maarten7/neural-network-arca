@@ -205,9 +205,48 @@ def animate_event(event_full):
 
 f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 
-def random_slice(len_evt):
+def back_ground(length):
     # if random filling is longer than 100 time slices than split in to parts
     # 240 sortest event? > 376 - 240 = 137 logest 
+
+    # random indices correspond with (a)nuK40_13
+    i, ii = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3, size=2)
+    sec = length
+
+    # first part
+    if length > 100:
+        # random event
+        tots = f['all_tots'][i]
+        bins = f['all_bins'][i]
+       
+        # random part of the k40 event
+        j = np.random.randint(0, 240 - 100)
+        # take tots from slices j : j + 100
+        ind = np.where(np.logical_and(j < bins[0], bins[0] < j + 100))
+        rtots1 = tots[ind]
+        # offset 
+        rb1 = [bins[0][ind] - j, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
+        sec = len_ran - 100
+    # second part
+    tots = f['all_tots'][ii]
+    bins = f['all_bins'][ii]
+    j = np.random.randint(0, 240 - sec)
+    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + sec))
+    rtots = tots[ind]
+    if len_ran > 100: offset = 100 -j else -j
+
+    rb = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
+
+    if len_ran > 100:
+        rtots = np.append(rtots1, rtots)
+        for i in range(5):
+            rb[i] = np.append(rb1[i], rb[i])
+
+    return rb, rtots 
+
+def random_slice(len_evt):
+    # if random filling is longer than 100 time slices than split in to parts
+    # 240 length of K40 event > 376 - 240 = 137 logest 
     i, ii = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3, size=2)
     len_ran = 376 - len_evt
     sec = len_ran
@@ -222,7 +261,7 @@ def random_slice(len_evt):
 
         rtots1 = tots[ind]
         
-        offset = len_evt - bins[0][ind][0] 
+        offset = len_evt - j 
         rb1 = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
 
         sec = len_ran - 100
@@ -233,7 +272,7 @@ def random_slice(len_evt):
     j = np.random.randint(0, 240 - sec)
     ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + sec))
     rtots = tots[ind]
-    offset = len_evt - bins[0][ind][0] 
+    offset = len_evt - j 
     if len_ran > 100: offset += 100
 
     rb = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
