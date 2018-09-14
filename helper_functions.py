@@ -18,10 +18,26 @@ LOG_DIR = PATH + "log"
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 
+def save_output(cost, acc=0, epoch=0):
+    """ writes accuracy and cost to file
+        input acc, accuracy value to write to file
+        input cost, cost value to write to file"""
+
+    print "Epoch %s\tcost: %f\tacc: %f" % (epoch, cost, acc)
+
+    with open(PATH + 'data/results/%s/epoch_cost_acc.txt' % (model.title), 'a') as f:
+        f.write(str(epoch) + ',' + str(cost) + ',' str(acc) + '\n')
+
 def import_model():
+    """ imports a python module from command line. 
+        Also import debug mode default is False"""        
     model = sys.argv[1].replace('/', '.')[:-3]
     model = importlib.import_module(model)
-    return model
+    try:
+        debug = eval(sys.argv[2])
+        return model, debug
+    except IndexError:
+        return model, False
 
 def make_file_str(evt_type, i):
     """ returns a file str of evt_type root files"""
@@ -32,6 +48,7 @@ def make_file_str(evt_type, i):
     return n
 
 def root_files(train=True, test=False, debug=False):
+    """ outputs strings of all root_files"""
     trange = []
     if train: trange = range(1, 13)
     if test: trange += range(13,16) 
@@ -42,6 +59,8 @@ def root_files(train=True, test=False, debug=False):
             yield n, evt_type
 
 def num_events(threshold):
+    """ calculates number of events with 
+        num_mc_hits > threshold"""
     tra = {typ: 0 for typ in EVT_TYPES}
     tes = {typ: 0 for typ in EVT_TYPES}
     EventFile.read_timeslices = True
