@@ -34,6 +34,8 @@ def data_writer(title):
         # Data sets for data tots, bins, and label
         shape = (NUM_GOOD_EVENTS_3, )
         dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
+        #shape = (NUM_GOOD_EVENTS_3, 4)
+        #dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
         shape = (NUM_GOOD_EVENTS_3, 5)
         dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
         shape = (NUM_GOOD_EVENTS_3, 3)
@@ -72,7 +74,7 @@ def data_writer(title):
                 if num_hits > 3 or num_hits == 0: 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
-                    tots, bins = dh.make_event(evt.hits, split_dom=True)
+                    tots, bins = dh.make_event(evt.hits)
                     label = dh.make_labels(type_index)
                     
                     dset_t[i] = tots 

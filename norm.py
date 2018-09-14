@@ -12,14 +12,13 @@ import itertools
 from helper_functions import *
 
 model = import_model()
-title = model.title
 
 dens = False
 "PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
 
 # hdf5 files met (meta)data
-pred_file = h5py.File(PATH + 'data/results/%s/_test_result_%s.hdf5' % (title, title), 'r')
-data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
+pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (model.title, model.title), 'r')
+data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % model.title, 'r')
 trigger_file = h5py.File(PATH + 'data/hdf5_files/JTrigger_trigger.hdf5', 'r')
 
 # Network output
@@ -166,5 +165,7 @@ def events_triggerd_as_K40():
 
 #histogram_trigger(np.log10(energies), 'log E')
 #histogram_trigger(np.log10(num_hits), 'log num hits')
+
 #plot_confusion_matrix()
-events_triggerd_as_K40()
+
+#events_triggerd_as_K40()
