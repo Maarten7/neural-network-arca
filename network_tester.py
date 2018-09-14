@@ -33,7 +33,7 @@ def writer():
 
         ##########################################################################
         print "Testing"
-        with h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'w') as hfile:
+        with h5py.File(PATH + 'data/results/%s/_test_result_%s.hdf5' % (title, title), 'w') as hfile:
             dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, model.NUM_CLASSES), dtype='float')
             i = 0
             batch_size = 30 
