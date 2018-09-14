@@ -205,84 +205,41 @@ def animate_event(event_full):
 
 f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 
-def back_ground(length):
+def get_piece_of_event(length, offset=0):
+    assert length <= 100
+    # random indices correspond with (a)nuK40_13
+    i = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3)
+    tots = f['all_tots'][i]
+    bins = f['all_bins'][i]
+    # random part of the k40 event
+    j = np.random.randint(0, 240 - length)
+    # take tots from slices j : j + length 
+    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + length))
+    bins = [bins[0][ind] + offset - j, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
+    return bins, tots[ind]
+
+def background_slice(length, main_offset=0):
     # if random filling is longer than 100 time slices than split in to parts
     # 240 sortest event? > 376 - 240 = 137 logest 
-
-    # random indices correspond with (a)nuK40_13
-    i, ii = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3, size=2)
     sec = length
-
     # first part
     if length > 100:
         # random event
-        tots = f['all_tots'][i]
-        bins = f['all_bins'][i]
-       
-        # random part of the k40 event
-        j = np.random.randint(0, 240 - 100)
-        # take tots from slices j : j + 100
-        ind = np.where(np.logical_and(j < bins[0], bins[0] < j + 100))
-        rtots1 = tots[ind]
-        # offset 
-        rb1 = [bins[0][ind] - j, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
-        sec = len_ran - 100
+        bins1, tots1 = get_piece_of_event(100)
+        sec = length - 100
     # second part
-    tots = f['all_tots'][ii]
-    bins = f['all_bins'][ii]
-    j = np.random.randint(0, 240 - sec)
-    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + sec))
-    rtots = tots[ind]
-    if len_ran > 100: offset = 100 -j else -j
+    if length > 100: 
+        bins2, tots2 = get_piece_of_event(sec, offset=100)
+    else:
+        bins2, tots2 = get_piece_of_event(sec)
 
-    rb = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
-
-    if len_ran > 100:
-        rtots = np.append(rtots1, rtots)
+    if length > 100:
+        tots2 = np.append(tots1, tots2)
         for i in range(5):
-            rb[i] = np.append(rb1[i], rb[i])
+            bins2[i] = np.append(bins1[i], bins2[i])
+    bins2[0] += main_offset
+    return tuple(bins2), tots2 
 
-    return rb, rtots 
-
-def random_slice(len_evt):
-    # if random filling is longer than 100 time slices than split in to parts
-    # 240 length of K40 event > 376 - 240 = 137 logest 
-    i, ii = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3, size=2)
-    len_ran = 376 - len_evt
-    sec = len_ran
-
-    # first part
-    if len_ran > 100:
-        tots = f['all_tots'][i]
-        bins = f['all_bins'][i]
-        
-        j = np.random.randint(0, 240 - 100)
-        ind = np.where(np.logical_and(j < bins[0], bins[0] < j + 100))
-
-        rtots1 = tots[ind]
-        
-        offset = len_evt - j 
-        rb1 = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
-
-        sec = len_ran - 100
-    print sec
-    # second part
-    tots = f['all_tots'][ii]
-    bins = f['all_bins'][ii]
-    j = np.random.randint(0, 240 - sec)
-    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + sec))
-    rtots = tots[ind]
-    offset = len_evt - j 
-    if len_ran > 100: offset += 100
-
-    rb = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
-
-    if len_ran > 100:
-        rtots = np.append(rtots1, rtots)
-        for i in range(5):
-            rb[i] = np.append(rb1[i], rb[i])
-
-    return rb, rtots 
 
 def batches(batch_size, test=False, debug=False):
     if debug:
@@ -302,54 +259,33 @@ def batches(batch_size, test=False, debug=False):
         events = np.zeros((batch_size, 377, 13, 13, 18, 3))
         labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
+            # get event bins and tots
             labels[i] = f['all_labels'][j]
-
             tots, bins = f['all_tots'][j], f['all_bins'][j]
-            len_evt = bins[0][-1]
-            bins[0] += (377 - len_evt - 1)
-            b = tuple(bins)
-            events[i][b] = tots
+            
+            # make random padding
+            len_evt = bins[0][-1] + 1
+            len_pad_tot = 377 - len_evt
+            pad_front = np.random.randint(0, len_pad_tot)
+            pad_back  = pad_front + len_evt
 
-            if len_evt != 376:
-                rb, rtots = random_slice(len_evt)
-                rb[0] -= len_evt 
-                rb = tuple(rb)
-                events[i][rb] = rtots
+            len_pad_front = pad_front
+            len_pad_back  = 377 - pad_back
+        
+            # fill big event with event data
+            bins[0] += pad_front
+            bins_event = tuple(bins)
+            events[i][bins_event] = tots
+
+            if len_evt != 377:
+                # fill front and back padding
+                bins_front, tots_front = background_slice(pad_front)
+                bins_back,  tots_back  = background_slice(len_pad_back, pad_back)
+
+                events[i][bins_front] = tots_front
+                events[i][bins_back]  = tots_back
 
         yield events, labels
 
 if __name__ == "__main__":
-    batch_size = 3
-    k = 0
-    batch = [0, 1, 2] 
-    events = np.zeros((batch_size, 377, 13, 13, 18, 3))
-    labels = np.zeros((batch_size, NUM_CLASSES))
-    for i, j in enumerate(batch):
-        labels[i] = f['all_labels'][j]
-
-        tots, bins = f['all_tots'][j], f['all_bins'][j]
-        len_evt = bins[0][-1]
-
-        len_pad_tot = 377 - len_evt
-        pad_front = np.random.randint(0, len_pad_tot)
-        pad_back = pad_front + len_evt
-
-        len_pad_front = pad_front
-        len_pad_back= 377 - pad_back
-        print 'pads\t', pad_front, pad_back
-        print 'len pads\t', len_evt, len_pad_front, len_pad_back
-        print 'tot_len\t', len_evt + len_pad_front + len_pad_back
-
-        bins[0] += pad_front
-        b = tuple(bins)
-        events[i][b] = tots
-
-        if len_evt != 376:
-            rf, rtotsf = random_slice(377 - pad_front)
-            rb, rtotsb = random_slice(377 - len_pad_back)
-
-            rb[0] -= pad_back 
-            rf = tuple(rf)
-            rb = tuple(rb)
-            events[i][rf] = rtotsf
-            events[i][rb] = rtotsb
+    pass
