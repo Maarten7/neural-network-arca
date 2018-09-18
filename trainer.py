@@ -100,7 +100,7 @@ def train_model(sess, test=True):
                 event = np.emtpy((bins[0,-1], 13, 13, 18, 31))
                 event[b] = t
 
-                feed_dict = {model.x: event, model.y: labels[i]} 
+                feed_dict = {model.x: event, model.y: labels[j]} 
                 _, a, c = sess.run([optimizer, accuracy, cost], feed_dict=feed_dict)
                 acc.append(a)
                 epoch_loss += c

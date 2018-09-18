@@ -105,6 +105,10 @@ f = EventFile(rfile)
 f.use_tree_index_for_mc_reading = True
 fi = iter(f)
 EVENT = fi.next()
+det = Det(PATH + 'data/km3net_115.det')
+hit = EVENT.hits[0]
+pmt = det.get_pmt(hit.dom_id, hit.channel_id)
+dom = det.get_dom(pmt)
 
 
 DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
