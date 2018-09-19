@@ -12,14 +12,13 @@ import itertools
 from helper_functions import *
 
 model = import_model()
-title = model.title
 
 dens = False
 "PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
 
 # hdf5 files met (meta)data
-pred_file = h5py.File(PATH + 'data/results/%s/_test_result_%s.hdf5' % (title, title), 'r')
-data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
+pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (model.title, model.title), 'r')
+data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % model.title, 'r')
 trigger_file = h5py.File(PATH + 'data/hdf5_files/JTrigger_trigger.hdf5', 'r')
 
 # Network output
@@ -145,12 +144,16 @@ def histogram_trigger(data_histogram, xlabel):
 #    fig.savefig('trigger_' + xlabel + '.pdf', dpi=500)
     plt.show()
 
+def events_triggerd_as_K40():
+    print 'K3NNET  ', 100 * np.sum((l_pred != 2) & (l_true == 2)) / float(np.sum( l_true == 2)) 
+    print 'JTrigger', 100 / float(np.sum( l_true == 2))
+
 #histogram_classified_as(np.log10(energies), 'log E', Rxy < 250)
 #histogram_classified_as(np.log10(energies), 'log E', ((250 < Rxy) & ( Rxy < 500)))
 #histogram_classified_as(np.log10(energies), 'log E', Rxy > 500)
 #histogram_classified_as(np.log10(energies), 'log E', outward)
 #histogram_classified_as(np.log10(energies), 'log E', inward)
-histogram_classified_as(np.log10(num_hits), 'log N hits')
+#histogram_classified_as(np.log10(num_hits), 'log N hits')
 #histogram_classified_as(afstand, 'R meters')
 #histogram_classified_as(np.log10(afstand), 'log R ')
 #histogram_classified_as(np.cos(theta), 'cos theta')
@@ -162,6 +165,7 @@ histogram_classified_as(np.log10(num_hits), 'log N hits')
 
 #histogram_trigger(np.log10(energies), 'log E')
 #histogram_trigger(np.log10(num_hits), 'log num hits')
-plot_confusion_matrix()
-print 100 * np.sum((l_pred != 2) & (l_true == 2)) / float(np.sum( l_true == 2)) 
-print 100 / float(np.sum( l_true == 2))
+
+#plot_confusion_matrix()
+
+#events_triggerd_as_K40()

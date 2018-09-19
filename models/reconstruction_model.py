@@ -53,33 +53,38 @@ biases =  {"l1": bias(nodes["l1"]),
            "l3": bias(nodes["l3"]),
            "l4": bias(nodes["l4"])}
 
-def cnn(x):
+def cnn(input_slice):
+    """ input: event tensor numpy shape 1, 18, 18, 13, 3"""
+    conv1 = tf.nn.relu(
+        conv3d(input_slice, weights["l1"]) + biases["l1"])
+
+    conv2 = tf.nn.relu(
+        conv3d(conv1, weights["l2"]) + biases["l2"])
+
+    conv2 = maxpool3d(conv2)
+
+    elements = np.prod(conv2._shape_as_list()[1:])
+
+    fc = tf.reshape(conv2, [-1, elements])
+    
+    fc = tf.nn.sigmoid(
+        tf.matmul(fc, weights["l3"]) + biases["l3"])
+
+    fc = tf.nn.sigmoid(
+        tf.matmul(fc, weights["l4"]) + biases["l4"])
+    return fc
+
+def km3nnet(x):
     """ input: event tensor numpy shape 377, 18, 18, 13, 3
         output: Energy, position, direction prediction in shape 7
         energy(1), position(3) and direction(3)"""
     print_tensor(x)
     out_time_bin = []
     time_bins = x._shape_as_list()[1]
+    # loop over 377 time slices
     for i in range(time_bins):
-        input = x[:,i,:,:,:,:] 
-        conv1 = tf.nn.relu(
-            conv3d(input, weights["l1"]) + biases["l1"])
-
-        conv2 = tf.nn.relu(
-            conv3d(conv1, weights["l2"]) + biases["l2"])
-
-        conv2 = maxpool3d(conv2)
-
-        elements = np.prod(conv2._shape_as_list()[1:])
-
-        fc = tf.reshape(conv2, [-1, elements])
-        
-        fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights["l3"]) + biases["l3"])
-
-        fc = tf.nn.sigmoid(
-            tf.matmul(fc, weights["l4"]) + biases["l4"])
-
+        input_slice = x[:,i,:,:,:,:] 
+        fc = cnn(input_slice)
         out_time_bin.append(fc)
 
     c = tf.concat(out_time_bin, 1)
@@ -192,44 +197,41 @@ def animate_event(event_full):
 
 f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 
-def random_slice(len_evt):
+def get_piece_of_event(length, offset=0):
+    assert length <= 100
+    # random indices correspond with (a)nuK40_13
+    i = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3)
+    tots = f['all_tots'][i]
+    bins = f['all_bins'][i]
+    # random part of the k40 event
+    j = np.random.randint(0, 240 - length)
+    # take tots from slices j : j + length 
+    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + length))
+    bins = [bins[0][ind] + offset - j, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
+    return bins, tots[ind]
+
+def background_slice(length, main_offset=0):
     # if random filling is longer than 100 time slices than split in to parts
-    i, ii = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3, size=2)
-    len_ran = 376 - len_evt
-    sec = len_ran
-
+    # 240 sortest event? > 376 - 240 = 137 logest 
+    sec = length
     # first part
-    if len_ran > 100:
-        tots = f['all_tots'][i]
-        bins = f['all_bins'][i]
-        
-        j = np.random.randint(0, 240 - 100)
-        ind = np.where(np.logical_and(j < bins[0], bins[0] < j + 100))
-
-        rtots1 = tots[ind]
-        
-        offset = len_evt - bins[0][ind][0] 
-        rb1 = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
-
-        sec = len_ran - 100
-
+    if length > 100:
+        # random event
+        bins1, tots1 = get_piece_of_event(100)
+        sec = length - 100
     # second part
-    tots = f['all_tots'][ii]
-    bins = f['all_bins'][ii]
-    j = np.random.randint(0, 240 - sec)
-    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + sec))
-    rtots = tots[ind]
-    offset = len_evt - bins[0][ind][0] 
-    if len_ran > 100: offset += 100
+    if length > 100: 
+        bins2, tots2 = get_piece_of_event(sec, offset=100)
+    else:
+        bins2, tots2 = get_piece_of_event(sec)
 
-    rb = [bins[0][ind] + offset, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
-
-    if len_ran > 100:
-        rtots = np.append(rtots1, rtots)
+    if length > 100:
+        tots2 = np.append(tots1, tots2)
         for i in range(5):
-            rb[i] = np.append(rb1[i], rb[i])
+            bins2[i] = np.append(bins1[i], bins2[i])
+    bins2[0] += main_offset
+    return tuple(bins2), tots2 
 
-    return tuple(rb), rtots 
 
 def batches(batch_size, test=False, debug=False):
     if debug:
@@ -243,23 +245,41 @@ def batches(batch_size, test=False, debug=False):
         num_events = NUM_GOOD_TRAIN_EVENTS_3
 
     for k in range(0, num_events, batch_size):
+        if k + batch_size > num_events:
+            batch_size = k + batch_size - num_events
         batch = indices[k: k + batch_size]
         events = np.zeros((batch_size, 377, 13, 13, 18, 3))
         labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
+            # get event bins and tots
             E = f['all_energies'][j]
             x, y, z = f['all_positions'][j]
             dx, dy, dz = f['all_directions'][j]
             labels[i] = [E, x, y, z, dx, dy, dz] 
 
             tots, bins = f['all_tots'][j], f['all_bins'][j]
-            len_evt = bins[0][-1]
-            b = tuple(bins)
-            events[i][b] = tots
 
-            if len_evt != 376:
-                rb, rtots = random_slice(len_evt)
-                events[i][rb] = rtots
+            # make random padding
+            len_evt = bins[0][-1] + 1
+            len_pad_tot = 377 - len_evt
+            pad_front = np.random.randint(0, len_pad_tot)
+            pad_back  = pad_front + len_evt
+
+            len_pad_front = pad_front
+            len_pad_back  = 377 - pad_back
+        
+            # fill big event with event data
+            bins[0] += pad_front
+            bins_event = tuple(bins)
+            events[i][bins_event] = tots
+
+            if len_evt != 377:
+                # fill front and back padding
+                bins_front, tots_front = background_slice(pad_front)
+                bins_back,  tots_back  = background_slice(len_pad_back, pad_back)
+
+                events[i][bins_front] = tots_front
+                events[i][bins_back]  = tots_back
 
         yield events, labels
 
