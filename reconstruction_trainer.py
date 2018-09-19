@@ -1,6 +1,6 @@
 ###################################
 # Maarten Post
-# trainer.py
+# reconstruction trainer.py
 ###################################
 import tensorflow as tf
 import numpy as np
@@ -10,18 +10,16 @@ import sys
 from time import time
 from helper_functions import * 
 
-model = import_model()
-title = model.title
-batches = model.batches
+# import neural network model and debug mode
+model, debug = import_model(only_model=False)
 
-debug = eval(sys.argv[2])
 num_epochs = 1000 if not debug else 2
 num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
 
 
 # Loss & Training
 # Compute cross entropy as loss function
-with tf.name_scope(title):
+with tf.name_scope(model.title):
     with tf.name_scope("Model"):
         output = model.km3nnet(model.x)
     with tf.name_scope("Xentropy"):
@@ -32,69 +30,28 @@ with tf.name_scope(title):
     
     saver = tf.train.Saver()
 
-def save_output(cost, test=False):
-    """ writes accuracy and cost to file
-        input acc, accuracy value to write to file
-        input cost, cost value to write to file
-        input test, boolean default False, if true the acc and cost are of the 
-            test set"""
-    mode = 'test' if test else 'train'
-    if test:
-        ne = NUM_GOOD_TEST_EVENTS_3
-    else:
-        ne = num_events 
 
-    cost_per_event = cost / float(ne)
-    print "\t%s\tcost: %f" % (mode, cost_per_event)
-
-    with open(PATH + 'data/results/%s/cost_%s.txt' % (title, mode), 'a') as f:
-        f.write(str(cost_per_event) + '\n')
-
-def test_model(sess):
-    """ test model on test data set
-        input sess: a tensor flow session"""
-    epoch_loss = 0
-    batch_size = 100 
-
-    # loop over all data in batches
-    for events, labels in test_batches(batch_size=batch_size):
-        # Train
-        feed_dict = {model.x: events, model.y: labels} 
-        c = sess.run([cost], feed_dict=feed_dict)
-
-        # Calculate loss and accuracy
-        epoch_loss += c * batch_size
-
-    save_output(epoch_loss, test=True)
-
-def train_model(sess, test=True):
+def train_model(sess):
     """ trains model,
-        input sess, a tensorflow session.
-        input test, boolean, default True, if True the accuracy and cost
-                    of test set are calculated"""
+        input sess, a tensorflow session."""
     print 'Start training'
-    batch_size = 10 
+    batch_size = 20 
     for epoch in range(num_epochs):
         print "epoch", epoch 
-        epoch_loss = 0
         #######################################################################
-        for events, labels in batches(batch_size=batch_size, debug=debug):
+        for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
             # Train
             feed_dict = {model.x: events, model.y: labels} 
-            _, c = sess.run([optimizer, cost], feed_dict=feed_dict)
+            sess.run([optimizer], feed_dict=feed_dict)
 
-            # Calculate loss and accuracy
-            epoch_loss += c * batch_size 
-
-        # Save accuracy and loss/cost
-        save_output(epoch_loss)
-
-        # test network and save weights
-        if test and epoch % 20 == 0 and epoch != 0: 
-            test_model(sess)
-        save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
+            if batch % 2000 == 0:
+                c = sess.run([cost], feed_dict=feed_dict)
+                save_output(c, epoch=epoch)
+                # Save weights every x events
+                save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
+                print '\t save at', batch
+        save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
         ########################################################################
-    return epoch_loss
 
 
 def main():
@@ -104,15 +61,12 @@ def main():
     #config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         try:
-            saver.restore(sess, PATH + "weights/%s.ckpt" % title)
+            saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
         except:
             print 'Initalize variables'
             sess.run(tf.global_variables_initializer())
-        train_model(sess, test=False)
+        train_model(sess)
  
 
 if __name__ == "__main__":
-    t_start = time()
-    a = main()
-    t_end = time()
-    print 'runtime', str(datetime.timedelta(seconds=t_end - t_start)) 
+    main()

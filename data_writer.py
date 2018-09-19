@@ -21,12 +21,10 @@ import importlib
 from helper_functions import *
 
 model = import_model()
-title = model.title
-Data_handle = model.Data_handle
 
 EventFile.read_timeslices = True
 def data_writer(title):
-    dh = Data_handle() 
+    dh = model.Data_handle() 
     # these datatypes allow for variable length array to be saved into hdf5 format
     # this is needed since tots and bins differ per event
     dtf = h5py.special_dtype(vlen=np.dtype('float64'))
@@ -36,6 +34,8 @@ def data_writer(title):
         # Data sets for data tots, bins, and label
         shape = (NUM_GOOD_EVENTS_3, )
         dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
+        #shape = (NUM_GOOD_EVENTS_3, 4)
+        #dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
         shape = (NUM_GOOD_EVENTS_3, 5)
         dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
         shape = (NUM_GOOD_EVENTS_3, 3)
@@ -74,7 +74,7 @@ def data_writer(title):
                 if num_hits > 3 or num_hits == 0: 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
-                    tots, bins = dh.make_event(evt.hits, split_dom=True)
+                    tots, bins = dh.make_event(evt.hits)
                     label = dh.make_labels(type_index)
                     
                     dset_t[i] = tots 
@@ -105,4 +105,4 @@ def data_writer(title):
                     i += 1
             
             ####################################################
-data_writer(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title)
+data_writer(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % model.title)
