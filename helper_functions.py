@@ -18,15 +18,6 @@ LOG_DIR = PATH + "log"
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 
-def save_output(cost, acc=0, epoch=0):
-    """ writes accuracy and cost to file
-        input acc, accuracy value to write to file
-        input cost, cost value to write to file"""
-
-    print "Epoch %s\tcost: %f\tacc: %f" % (epoch, cost, acc)
-
-    with open(PATH + 'data/results/%s/epoch_cost_acc.txt' % (model.title), 'a') as f:
-        f.write(str(epoch) + ',' + str(cost) + ',' str(acc) + '\n')
 
 def import_model():
     """ imports a python module from command line. 

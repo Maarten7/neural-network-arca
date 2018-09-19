@@ -206,7 +206,6 @@ def animate_event(event_full):
 f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
 
 def get_piece_of_event(length, offset=0):
-    assert length <= 100
     # random indices correspond with (a)nuK40_13
     i = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3)
     tots = f['all_tots'][i]
