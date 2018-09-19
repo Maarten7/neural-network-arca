@@ -35,6 +35,16 @@ with tf.name_scope(model.title):
     
     saver = tf.train.Saver()
 
+def save_output(cost, acc=0, epoch=0):
+    """ writes accuracy and cost to file
+        input acc, accuracy value to write to file
+        input cost, cost value to write to file"""
+
+    print "Epoch %s\tcost: %f\tacc: %f" % (epoch, cost, acc)
+
+    with open(PATH + 'data/results/%s/epoch_cost_acc.txt' % (model.title), 'a') as f:
+        f.write(str(epoch) + ',' + str(cost) + ',' + str(acc) + '\n')
+
 
 def train_model(sess):
     """ trains model,
@@ -52,7 +62,7 @@ def train_model(sess):
             feed_dict = {model.x: events, model.y: labels} 
             sess.run([optimizer], feed_dict=feed_dict)
 
-            if batch % 2000 == 0:
+            if batch % 100 == 0:
                 acc, c = sess.run([accuracy, cost], feed_dict=feed_dict)
                 save_output(c, acc, epoch)
                 # Save weights every x events
