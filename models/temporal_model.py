@@ -11,6 +11,7 @@ import h5py
 title = 'temporal'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
+MC_HITS_CUTOFF = 5
 
 def conv3d(x, W):
     return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
@@ -30,7 +31,7 @@ def bias(shape):
     b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
     return b
 
-x = tf.placeholder(tf.float32, [None, 377, 13, 13, 18, 3], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
 
 nodes =   {"l1": 25,
@@ -71,10 +72,10 @@ def cnn(input_slice):
     return fc
 
 def km3nnet(x):
-    """ input: event tensor numpy shape 377, 18, 18, 13, 3
+    """ input: event tensor numpy shape 400, 18, 18, 13, 3
         output: label prediction shape 3 (one hot encoded)"""
     out_time_bin = []
-    # loop over 377 time slices
+    # loop over 400 time slices
     for i in range(x._shape_as_list()[1]):
         input_slice = x[:,i,:,:,:,:] 
         fc = cnn(input_slice)
@@ -126,25 +127,21 @@ class Data_handle(object):
 
     def make_event(self, hits):
         "Take aa_net hits and put them in cube numpy arrays"
-        ts = []
-        for hit in hits:
-            ts.append(hit.t)
-       
-        t0 = min(ts)
-        t1 = max(ts)
-        dt = t1 - t0 
 
-        tbin_size = 50
-        num_tbins = np.int(np.ceil(dt / tbin_size))
         channels = 3
-        event = np.zeros((num_tbins, 13, 13, 18, channels))
-
+        tbin_size = 50 # ns
+        event = np.zeros((400, 13, 13, 18, channels))
 
         for hit in hits:
             tot = hit.tot
-            t = hit.t - t0
-            
-            t_index = np.int(np.floor(t / tbin_size))
+            t = hit.t
+
+            if hit.t > 20000: 
+                t_index = 399
+            elif hit.t < 0:
+                t_index = 0
+            else:
+                t_index = np.int(np.floor(t / tbin_size))
 
             channel_id = hit.channel_id
             pmt = self.det.get_pmt(hit.dom_id, channel_id)
@@ -156,10 +153,7 @@ class Data_handle(object):
 
             z = self.z_index[round(dom.pos.z)] 
             y, x = self.line_to_index(dom.line_id)
-            try:
-                event[t_index, x, y, z] += direction * tot / self.NORM_FACTOR 
-            except IndexError:
-                event[t_index - 1, x, y, z] += direction * tot / self.NORM_FACTOR 
+            event[t_index, x, y, z] += direction * tot / self.NORM_FACTOR 
                 
         non = event.nonzero()
         return event[non], np.array(non)
@@ -174,86 +168,31 @@ class Data_handle(object):
             return np.array([0, 0, 1])
 
 
-f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
-
-def get_piece_of_event(length, offset=0):
-    # random indices correspond with (a)nuK40_13
-    i = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3)
-    tots = f['all_tots'][i]
-    bins = f['all_bins'][i]
-    # random part of the k40 event
-    j = np.random.randint(0, 240 - length)
-    # take tots from slices j : j + length 
-    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + length))
-    bins = [bins[0][ind] + offset - j, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
-    return bins, tots[ind]
-
-def background_slice(length, main_offset=0):
-    # if random filling is longer than 100 time slices than split in to parts
-    # 240 sortest event? > 376 - 240 = 137 logest 
-    sec = length
-    # first part
-    if length > 100:
-        # random event
-        bins1, tots1 = get_piece_of_event(100)
-        sec = length - 100
-    # second part
-    if length > 100: 
-        bins2, tots2 = get_piece_of_event(sec, offset=100)
-    else:
-        bins2, tots2 = get_piece_of_event(sec)
-
-    if length > 100:
-        tots2 = np.append(tots1, tots2)
-        for i in range(5):
-            bins2[i] = np.append(bins1[i], bins2[i])
-    bins2[0] += main_offset
-    return tuple(bins2), tots2 
-
-
 def batches(batch_size, test=False, debug=False):
+    f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
     if debug:
-        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_DEBUG_EVENTS, replace=False)
+        indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_DEBUG_EVENTS, replace=False)
         num_events = NUM_DEBUG_EVENTS 
     elif test:
-        indices = range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3)
-        num_events = NUM_GOOD_TEST_EVENTS_3
+        indices = range(NUM_TRAIN_EVENTS, NUM_EVENTS)
+        num_events = NUM_TEST_EVENTS
     else:
-        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
-        num_events = NUM_GOOD_TRAIN_EVENTS_3
+        indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_TRAIN_EVENTS, replace=False)
+        num_events = NUM_TRAIN_EVENTS
 
     for k in range(0, num_events, batch_size):
         if k + batch_size > num_events:
             batch_size = k + batch_size - num_events
         batch = indices[k: k + batch_size]
-        events = np.zeros((batch_size, 377, 13, 13, 18, 3))
+        events = np.zeros((batch_size, 400, 13, 13, 18, 3))
         labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
             # get event bins and tots
             labels[i] = f['all_labels'][j]
             tots, bins = f['all_tots'][j], f['all_bins'][j]
 
-            # make random padding
-            len_evt = bins[0][-1] + 1
-            len_pad_tot = 377 - len_evt
-            pad_front = np.random.randint(0, len_pad_tot)
-            pad_back  = pad_front + len_evt
-
-            len_pad_front = pad_front
-            len_pad_back  = 377 - pad_back
-        
-            # fill big event with event data
-            bins[0] += pad_front
             bins_event = tuple(bins)
-            events[i][bins_event] = tots
-
-            if len_evt != 377:
-                # fill front and back padding
-                bins_front, tots_front = background_slice(pad_front)
-                bins_back,  tots_back  = background_slice(len_pad_back, pad_back)
-
-                events[i][bins_front] = tots_front
-                events[i][bins_back]  = tots_back
+            events[i][bins] = tots
 
         yield events, labels
         

@@ -32,22 +32,22 @@ def data_writer(title):
 
     with h5py.File(title, "a") as hfile:
         # Data sets for data tots, bins, and label
-        shape = (NUM_GOOD_EVENTS_3, )
+        shape = (NUM_EVENTS, )
         dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
-        #shape = (NUM_GOOD_EVENTS_3, 4)
-        #dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
-        shape = (NUM_GOOD_EVENTS_3, 5)
+                        #shape = (NUM_EVENTS, 4)
+                        #dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
+        shape = (NUM_EVENTS, 5)
         dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
-        shape = (NUM_GOOD_EVENTS_3, 3)
+        shape = (NUM_EVENTS, 3)
         dset_l = hfile.create_dataset("all_labels", dtype='int64', shape=shape)        
 
         # Data sets for meta data: Energy, n_hits, type, position and direction
-        shape = (NUM_GOOD_EVENTS_3, )
+        shape = (NUM_EVENTS, )
         dset_E = hfile.create_dataset('all_energies', dtype='float64', shape=shape)
         dset_h = hfile.create_dataset('all_num_hits', dtype='int', shape=shape)
         dset_y = hfile.create_dataset('all_types', dtype='int', shape=shape)
         
-        shape = (NUM_GOOD_EVENTS_3, 3)
+        shape = (NUM_EVENTS, 3)
         dset_p = hfile.create_dataset('all_positions', dtype='float64', shape=shape)
         dset_d = hfile.create_dataset('all_directions', dtype='float64', shape=shape)
 
@@ -71,7 +71,7 @@ def data_writer(title):
                 # only events with more than 3 hits are saved since
                 # 4 hits is needed at least to reconstrucd.
                 num_hits = len(evt.mc_hits)
-                if num_hits > 3 or num_hits == 0: 
+                if num_hits > 4 or num_hits == 0: 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
                     tots, bins = dh.make_event(evt.hits)
@@ -105,4 +105,4 @@ def data_writer(title):
                     i += 1
             
             ####################################################
-data_writer(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % model.title)
+data_writer(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % model.title)
