@@ -35,7 +35,7 @@ def make_file_str(evt_type, i):
     """ returns a file str of evt_type root files"""
     i = str(i)
     path = PATH + 'data/root_files'
-    path += '/out_JTE_km3_v4_{0}_{1}.evt.root'
+    path += '/out_JEW_km3_v4_{0}_{1}.evt.root'
     n = path.format(evt_type, i)
     return n
 
@@ -74,26 +74,15 @@ def num_events(threshold):
                     tes[evt_type] += 1
                 else:
                     tra[evt_type] += 1
-                    
+    print tra
+    print tes
     return tra, tes 
 
 
-#EventFile.read_timeslices = True
-#eccf = '/user/postm/neural-network-arca/data/root_files/out_JTE_km3_v4_nueCC_5.evt.root'
-#f = EventFile(eccf)
-#f.use_tree_index_for_mc_reading = True
-
-DIR_TRAIN_EVENTS = {'e': 67755 + 83420, 'm': 96362, 'k': 82368}
-DIR_TEST_EVENTS = {'e': 16970 + 20618, 'm': 23734, 'k': 20592}
-NUM_DEBUG_EVENTS = 3000 # first it was 55227
+NUM_DEBUG_EVENTS = 3000
+#num_events(5)
+DIR_TRAIN_EVENTS = {'anueNC': 20050, 'numuCC': 36638, 'nueCC': 30856, 'anumuCC': 38461, 'anueCC': 30970, 'nueNC': 22074, 'nuK40': 41172, 'anuK40': 41172}
+DIR_TEST_EVENTS =  {'anueNC': 5055, 'numuCC': 8893, 'nueCC': 7623, 'anumuCC': 9540, 'anueCC': 7578, 'nueNC': 5595, 'nuK40': 10293, 'anuK40': 10293}
 NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
 NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
 NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
-
-# results of running num_events(3)
-DIR_GOOD_TRAIN_EVENTS_3 = {'anueNC': 22866, 'numuCC': 38886, 'nueCC': 33337, 'anumuCC': 40807, 'anueCC': 33399, 'nueNC': 24971, 'nuK40': 41184, 'anuK40': 41184}
-DIR_GOOD_TEST_EVENTS_3 = {'anueNC': 5747, 'numuCC': 9487, 'nueCC': 8244, 'anumuCC': 10139, 'anueCC': 8140, 'nueNC': 6322, 'nuK40': 10296, 'anuK40': 10296}
-
-NUM_GOOD_TRAIN_EVENTS_3 = sum(DIR_GOOD_TRAIN_EVENTS_3.values())
-NUM_GOOD_TEST_EVENTS_3 = sum(DIR_GOOD_TEST_EVENTS_3.values())
-NUM_GOOD_EVENTS_3 = NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3
