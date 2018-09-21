@@ -7,8 +7,8 @@ import matplotlib.animation as animation
 import matplotlib
 import h5py
 
-from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS
-from data_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt, hit_time_to_index
+from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS, PATH
+from detector_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt, hit_time_to_index
 from tf_help import conv3d, maxpool3d, weight, bias
 
 title = 'temporal'
@@ -72,6 +72,15 @@ def km3nnet(x):
     output = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
     return output 
 
+output = km3nnet(x)
+prediction = tf.nn.softmax(output)
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=y))
+# Train network with AdamOptimizer
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
+# Compute the accuracy
+correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
+accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
+    
 
 def make_event(hits, norm_factor=100, tot_mode=True):
     "Take aa_net hits and put them in cube numpy arrays"

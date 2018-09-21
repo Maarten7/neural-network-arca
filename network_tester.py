@@ -17,11 +17,7 @@ from helper_functions import *
 model = import_model()
 
 # Tensorboard and saving variables
-with tf.name_scope(model.title):
-    with tf.name_scope("Model"):
-        output = model.km3nnet(model.x)
-        prediction = tf.nn.softmax(output)
-    saver = tf.train.Saver()
+saver = tf.train.Saver()
 
 # Session
 def writer():
@@ -42,8 +38,7 @@ def writer():
                 ts = time()
 
                 feed_dict = {model.x: events, model.y: labels}
-                p = sess.run(prediction, feed_dict=feed_dict)
-                #p = sess.run(output, feed_dict=feed_dict)
+                p = sess.run(model.prediction, feed_dict=feed_dict)
 
                 dset_pred[i: i + batch_size] = p
 

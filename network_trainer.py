@@ -15,25 +15,8 @@ model, debug = import_model(only_model=False)
 
 num_epochs = 1000 if not debug else 2
 num_events = NUM_DEBUG_EVENTS if debug else NUM_TRAIN_EVENTS
-
-
-# Loss & Training
-# Compute cross entropy as loss function
-with tf.name_scope(model.title):
-    with tf.name_scope("Model"):
-        output = model.km3nnet(model.x)
-        prediction = tf.nn.softmax(output)
-    with tf.name_scope("Xentropy"):
-        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=model.y))
-    # Train network with AdamOptimizer
-    with tf.name_scope("Train"):
-        optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
-    # Compute the accuracy
-    with tf.name_scope("Test"):
-        correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(model.y, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-    
-    saver = tf.train.Saver()
+   
+saver = tf.train.Saver()
 
 def save_output(cost, acc=0, epoch=0):
     """ writes accuracy and cost to file
@@ -50,7 +33,7 @@ def train_model(sess):
     """ trains model,
         input sess, a tensorflow session."""
     print 'Start training'
-    batch_size = 20 
+    batch_size = 10 
     for epoch in range(num_epochs):
         print "epoch", epoch 
 
@@ -58,10 +41,10 @@ def train_model(sess):
         for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
             # Train
             feed_dict = {model.x: events, model.y: labels} 
-            sess.run([optimizer], feed_dict=feed_dict)
+            sess.run([model.optimizer], feed_dict=feed_dict)
 
             if batch % 100 == 0:
-                acc, c = sess.run([accuracy, cost], feed_dict=feed_dict)
+                acc, c = sess.run([model.accuracy, cost], feed_dict=feed_dict)
                 save_output(c, acc, epoch)
                 # Save weights every x events
                 save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)

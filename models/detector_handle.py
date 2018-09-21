@@ -44,7 +44,7 @@ def pmt_to_dom_index(pmt):
 def pmt_direction(pmt):
     """ returns direction vector of a PMT"""
     direction = pmt.dir
-    return = np.array([direction.x, direction.y, direction.z])
+    return np.array([direction.x, direction.y, direction.z])
 
 def hit_to_pmt(hit):
     det.get_pmt(hit.dom_id, hit.channel_id)
