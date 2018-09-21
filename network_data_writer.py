@@ -24,7 +24,6 @@ model = import_model()
 
 EventFile.read_timeslices = True
 def data_writer(title):
-    dh = model.Data_handle() 
     # these datatypes allow for variable length array to be saved into hdf5 format
     # this is needed since tots and bins differ per event
     dtf = h5py.special_dtype(vlen=np.dtype('float64'))
@@ -74,8 +73,8 @@ def data_writer(title):
                 if num_hits > 4 or num_hits == 0: 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
-                    tots, bins = dh.make_event(evt.hits)
-                    label = dh.make_labels(type_index)
+                    tots, bins = model.make_event(evt.hits)
+                    label = model.make_labels(type_index)
                     
                     dset_t[i] = tots 
                     dset_b[i] = bins 
