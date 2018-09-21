@@ -3,30 +3,15 @@ import aa
 import numpy as np
 import tensorflow as tf
 import h5py
-from helper_functions import *
-import detector_handle
+
+from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS
+from data_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt
+import tf_help import conv3d, maxpool3d, weight, bias
 
 title = 'three_classes_sum_tot'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 
-def conv3d(x, W):
-    return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
-
-def maxpool3d(x):
-    # size of window         movement of window as you slide about
-    return tf.nn.max_pool3d(x, 
-        ksize=[1, 2, 2, 2, 1],
-        strides=[1, 2, 2, 2, 1],
-        padding='SAME')
-
-def weight(shape):
-    w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
-    return w
-
-def bias(shape):
-    b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
-    return b
 
 x = tf.placeholder(tf.float32, [None, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
@@ -80,22 +65,21 @@ def km3nnet(x):
     return output
 
 
-def make_event(hits, NORM_FACTOR=100, TOT_MODE=True):
+def make_event(hits, norm_factor=100, tot_mode=True):
     "Take aa_net hits and put them in cube numpy arrays"
     event = np.zeros((13, 13, 18, 3))
     for hit in hits:
-        tot = hit.tot if TOT_MODE else 1
-        pmt = det.get_pmt(hit.dom_id, hit.channel_id)
-        direction = np.array([pmt.dir.x, pmt.dir.y, pmt.dir.z])
-        dom = det.get_dom(pmt)
-        line_id = dom.line_id
-        # also valid
-        # line_id = np.ceil(hit.dom_id / 18.)
 
-        z = detector_handle.z_index[round(dom.pos.z)] 
-        y, x = detector_handle.line_to_index(dom.line_id)
+        tot       = hit.tot if tot_mode else 1
 
-        event[x, y, z] += direction * tot / NORM_FACTOR 
+        pmt       = hit_to_pmt(hit)
+
+        direction = pmt_direction(pmt)
+
+        x, y, z   = pmt_to_dom_index(pmt)
+
+        event[x, y, z] += direction * tot / tot_mode 
+
     non = event.nonzero()
     return event[non], np.array(non)
 
@@ -170,13 +154,12 @@ def show_event2d(event):
     plt.show()
 
 def show_event_pos(hits):
-    det = Det(PATH + 'data/km3net_115.det')
     plt.plot(0,0)
     plt.axes().set_aspect('equal' )
     xs, ys = [], []
     for hit in hits:
-        pmt = det.get_pmt(hit.dom_id, hit.channel_id)
-        dom = det.get_dom(pmt)
+        pmt = detector_handle.det.get_pmt(hit.dom_id, hit.channel_id)
+        dom = detector_handle.det.get_dom(pmt)
         xs.append(dom.pos.x)
         ys.append(dom.pos.y)
     print xs, ys 

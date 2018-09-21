@@ -2,34 +2,19 @@ from ROOT import *
 import aa
 import numpy as np
 import tensorflow as tf
-from helper_functions import *
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib
 import h5py
 
+from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS
+from data_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt, hit_time_to_index
+from tf_help import conv3d, maxpool3d, weight, bias
+
 title = 'temporal'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 MC_HITS_CUTOFF = 5
-
-def conv3d(x, W):
-    return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
-
-def maxpool3d(x):
-    # size of window         movement of window as you slide about
-    return tf.nn.max_pool3d(x, 
-        ksize=[1, 2, 2, 2, 1],
-        strides=[1, 2, 2, 2, 1],
-        padding='SAME')
-
-def weight(shape):
-    w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
-    return w
-
-def bias(shape):
-    b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
-    return b
 
 x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
@@ -87,85 +72,38 @@ def km3nnet(x):
     output = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
     return output 
 
-class Data_handle(object):
-    def __init__(self, tot_mode=True, norm=100):
-        self.lines = self.lines()
-        self.z_index = self.z_index()
-        self.det = Det(PATH + 'data/km3net_115.det')
-        self.NORM_FACTOR = float(norm) 
-        self.TOT_MODE = tot_mode
 
-    def lines(self):
-        return np.array([
-                [0,   0,   109, 110, 111, 0,   0,  0,   0,   0,   0,   0,   0 ],
-                [0,   81,  82,  83,  84,  85,  86, 0,   0,   0,   0,   0,   0 ],
-                [108, 80,  53,  54,  55,  56,  57, 87,  112, 0,   0,   0,   0 ],
-                [107, 79,  52,  31,  32,  33,  34, 58,  88,  113, 0,   0,   0 ],
-                [106, 78,  51,  30,  15,  16,  17, 35,  59,  89,  114, 0,   0 ],
-                [0,   77,  50,  29,  14,  5,   6,  18,  36,  60,  90,  115, 0 ],
-                [0,   76,  49,  28,  13,  4,   1,  7,   19,  37,  61,  91,  0 ],
-                [0,   105, 75,  48,  27,  12,  3,  2,   10,  24,  44,  70,  0 ],
-                [0,   0,   104, 74,  47,  26,  11, 9,   8,   22,  42,  68,  99],
-                [0,   0,   0,   103, 73,  46,  25, 23,  21,  20,  40,  66,  97],
-                [0,   0,   0,   0,   102, 72,  45, 43,  41,  39,  38,  64,  95],
-                [0,   0,   0,   0,   0,   101, 71, 69,  67,  65,  63,  62,  93],
-                [0,   0,   0,   0,   0,   0,   0,  100, 98,  96,  94,  92,  0 ]
-                ])
+def make_event(hits, norm_factor=100, tot_mode=True):
+    "Take aa_net hits and put them in cube numpy arrays"
 
+    tbin_size = 50 # ns
+    event = np.zeros((400, 13, 13, 18, 333))
 
-    def z_index(self):
-        return {712: 0, 676: 1, 640: 2, 604: 3, 568: 4, 532: 5, 496: 6,
-              460: 7, 424: 8, 388: 9, 352: 10, 316: 11, 280: 12,
-              244: 13, 208: 14, 172: 15, 136: 16, 100: 17}
+    for hit in hits:
 
-    def line_to_index(self, line):
-        """ Takes a line number and return it's
-        position and it's slice. Where event are made like
-        backslashes"""
-        i, j = np.where(self.lines == line)
-        return np.int(i), np.int(j)
+        tot       = hit.tot if tot_mode else 1
 
-    def make_event(self, hits):
-        "Take aa_net hits and put them in cube numpy arrays"
+        pmt       = hit_to_pmt(hit)
 
-        channels = 3
-        tbin_size = 50 # ns
-        event = np.zeros((400, 13, 13, 18, channels))
+        direction = pmt_direction(pmt)
 
-        for hit in hits:
-            tot = hit.tot
-            t = hit.t
+        x, y, z   = pmt_to_dom_index(pmt)
 
-            if hit.t > 20000: 
-                t_index = 399
-            elif hit.t < 0:
-                t_index = 0
-            else:
-                t_index = np.int(np.floor(t / tbin_size))
+        t         = hit_time_to_index(hit)
 
-            channel_id = hit.channel_id
-            pmt = self.det.get_pmt(hit.dom_id, channel_id)
-            direction = np.array([pmt.dir.x, pmt.dir.y, pmt.dir.z])
-            dom = self.det.get_dom(pmt)
-            line_id = dom.line_id
-            # also valid
-            # line_id = np.ceil(hit.dom_id / 18.)
+        event[t, x, y, z] += direction * tot / norm_factor 
+            
+    non = event.nonzero()
+    return event[non], np.array(non)
 
-            z = self.z_index[round(dom.pos.z)] 
-            y, x = self.line_to_index(dom.line_id)
-            event[t_index, x, y, z] += direction * tot / self.NORM_FACTOR 
-                
-        non = event.nonzero()
-        return event[non], np.array(non)
-
-    def make_labels(self, code):
-        """ Makes one hot labels form evt_type code"""
-        if code < 4:
-            return np.array([1, 0, 0])
-        elif code < 6:
-            return np.array([0, 1, 0])
-        else:
-            return np.array([0, 0, 1])
+def make_labels(code):
+    """ Makes one hot labels form evt_type code"""
+    if code < 4:
+        return np.array([1, 0, 0])
+    elif code < 6:
+        return np.array([0, 1, 0])
+    else:
+        return np.array([0, 0, 1])
 
 
 def batches(batch_size, test=False, debug=False):
