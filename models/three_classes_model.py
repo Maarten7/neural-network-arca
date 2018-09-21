@@ -5,7 +5,7 @@ import tensorflow as tf
 import h5py
 
 from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS
-from data_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt
+from detector_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt
 import tf_help import conv3d, maxpool3d, weight, bias
 
 title = 'three_classes_sum_tot'
