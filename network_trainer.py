@@ -14,7 +14,7 @@ from helper_functions import *
 model, debug = import_model(only_model=False)
 
 num_epochs = 1000 if not debug else 2
-num_events = NUM_DEBUG_EVENTS if debug else NUM_GOOD_TRAIN_EVENTS_3
+num_events = NUM_DEBUG_EVENTS if debug else NUM_TRAIN_EVENTS
 
 
 # Loss & Training

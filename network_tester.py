@@ -34,7 +34,7 @@ def writer():
         print "Testing"
         # open result file
         with h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (model.title, model.title), 'w') as hfile:
-            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, model.NUM_CLASSES), dtype='float')
+            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_TEST_EVENTS, model.NUM_CLASSES), dtype='float')
 
             i = 0
             batch_size = 30 
@@ -47,7 +47,7 @@ def writer():
 
                 dset_pred[i: i + batch_size] = p
 
-                print i, NUM_GOOD_TEST_EVENTS_3
+                print i, NUM_TEST_EVENTS
                 i += batch_size
                 print '\tprediction', (time() - ts) / batch_size
 
