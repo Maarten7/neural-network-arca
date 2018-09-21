@@ -14,10 +14,10 @@ Master project Maarten.
 #### Workflow: 
 1. Get monte carlo (.evt) files from Lyon. (a)nu- eCC eNC for showers (a)numuCC for tracks. Perhaps also tauon and atmospheric muons.
 2. Run detector simulation with JPP (example: JTriggerEfficientcy or JEventTimesliceWriter) get .root files. Also make events with only K40 (with JRandomTimeSliceWriter)
-3. Transform events from .root files into numpy arrays according to your Neural Network model. (models/) Save as .hdf5 files. Also save meta data like Energy, direction, position and type of neutrino. (data_writer.py)
-4. Feed numpy arrays to Neural network model to train as trigger, classifier or reconstructor. Keep 20% test set. Save weights (trainer.py)
+3. Transform events from .root files into numpy arrays according to your Neural Network model. (models/) Save as .hdf5 files. Also save meta data like Energy, direction, position and type of neutrino. (network_data_writer.py)
+4. Feed numpy arrays to Neural network model to train as trigger, classifier or reconstructor. Keep 20% test set. Save weights (network_trainer.py)
 5. Feed test set to Neural network save output to .hdf5  (network_tester.py)
-6. Show results with a lot of plots (norm.py plotter.py)
+6. Show results with a lot of plots (network_plotter.py)
 7. Profit
 
 #### The model
@@ -40,4 +40,5 @@ Master project Maarten.
 4. Each minitimeslice matrix with shape (13, 13, 18, 3) is passed through a 3Dconv similar to the TID model.
 5. The outputs of each minitimeslice are passed in order through a LSTM cell for reaching the final output
 
-
+#### Trouble shooting
+If you get a CUDA_ERROR on schol or schar ask Jan Just Keijser to reset it.

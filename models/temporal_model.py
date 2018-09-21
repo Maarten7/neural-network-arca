@@ -191,7 +191,7 @@ def batches(batch_size, test=False, debug=False):
             labels[i] = f['all_labels'][j]
             tots, bins = f['all_tots'][j], f['all_bins'][j]
 
-            bins_event = tuple(bins)
+            bins = tuple(bins)
             events[i][bins] = tots
 
         yield events, labels
