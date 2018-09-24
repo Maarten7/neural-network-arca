@@ -39,6 +39,9 @@ Master project Maarten.
 3. You now have a (400, 13, 13, 18, 3) or (400, 13, 13, 18, 1) shaped matrix where the TOTs or NumHits are weighted with de PMT direction or not respectively. (t, x, y, z, c)
 4. Each minitimeslice matrix with shape (13, 13, 18, 3) is passed through a 3Dconv similar to the TID model.
 5. The outputs of each minitimeslice are passed in order through a LSTM cell for reaching the final output
+#### Training
+Cost funtion:   (softmax) Cross entropy
+Optimizer:      Adam optimizer with learning rate = 1e-5 - 1e-4
 
 #### Trouble shooting
 If you get a CUDA_ERROR on schol or schar ask Jan Just Keijser to reset it.
