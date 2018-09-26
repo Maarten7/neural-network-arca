@@ -2,39 +2,20 @@ from ROOT import *
 import aa
 import numpy as np
 import tensorflow as tf
-from helper_functions import *
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib
 import h5py
-title = 'reconstruction'
 
+from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS, PATH
+from detector_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt, hit_time_to_index
+from tf_help import conv3d, maxpool3d, weight, bias
+
+title = 'reconstruction'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 7 # energie, x, y, z, dx, dy, dz
 
-def conv3d(x, W):
-    return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME')
-
-def maxpool3d(x):
-    # size of window         movement of window as you slide about
-    return tf.nn.max_pool3d(x, 
-        ksize=[1, 2, 2, 2, 1],
-        strides=[1, 2, 2, 2, 1],
-        padding='SAME')
-
-def weight(shape):
-    w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
-    return w
-
-def bias(shape):
-    b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
-    return b
-
-def print_tensor(x):
-    #print 'x\t\t', x.shape, np.prod(x._shape_as_list()[1:])
-    pass
-
-x = tf.placeholder(tf.float32, [None, 377, 13, 13, 18, 3], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
 
 nodes =   {"l1": 25,
@@ -54,7 +35,7 @@ biases =  {"l1": bias(nodes["l1"]),
            "l4": bias(nodes["l4"])}
 
 def cnn(input_slice):
-    """ input: event tensor numpy shape 1, 18, 18, 13, 3"""
+    """ input: event tensor numpy shape 1, 13, 13, 18, 3"""
     conv1 = tf.nn.relu(
         conv3d(input_slice, weights["l1"]) + biases["l1"])
 
@@ -75,14 +56,11 @@ def cnn(input_slice):
     return fc
 
 def km3nnet(x):
-    """ input: event tensor numpy shape 377, 18, 18, 13, 3
-        output: Energy, position, direction prediction in shape 7
-        energy(1), position(3) and direction(3)"""
-    print_tensor(x)
+    """ input: event tensor numpy shape 400, 18, 18, 13, 3
+        output: Energy, position, direction prediction in shape 7"""
     out_time_bin = []
-    time_bins = x._shape_as_list()[1]
-    # loop over 377 time slices
-    for i in range(time_bins):
+    # loop over 400 time slices
+    for i in range(x._shape_as_list()[1]):
         input_slice = x[:,i,:,:,:,:] 
         fc = cnn(input_slice)
         out_time_bin.append(fc)
@@ -90,87 +68,68 @@ def km3nnet(x):
     c = tf.concat(out_time_bin, 1)
     lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1)
     outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=tf.float32)
-    prediction = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
-    return prediction
+    output = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+    return output
 
-class Data_handle(object):
-    def __init__(self, norm=100):
-        self.lines = self.lines()
-        self.z_index = self.z_index()
-        self.det = Det(PATH + 'data/km3net_115.det')
-        self.NORM_FACTOR = float(norm) 
-
-    def lines(self):
-        return np.array([
-                [0,   0,   109, 110, 111, 0,   0,  0,   0,   0,   0,   0,   0 ],
-                [0,   81,  82,  83,  84,  85,  86, 0,   0,   0,   0,   0,   0 ],
-                [108, 80,  53,  54,  55,  56,  57, 87,  112, 0,   0,   0,   0 ],
-                [107, 79,  52,  31,  32,  33,  34, 58,  88,  113, 0,   0,   0 ],
-                [106, 78,  51,  30,  15,  16,  17, 35,  59,  89,  114, 0,   0 ],
-                [0,   77,  50,  29,  14,  5,   6,  18,  36,  60,  90,  115, 0 ],
-                [0,   76,  49,  28,  13,  4,   1,  7,   19,  37,  61,  91,  0 ],
-                [0,   105, 75,  48,  27,  12,  3,  2,   10,  24,  44,  70,  0 ],
-                [0,   0,   104, 74,  47,  26,  11, 9,   8,   22,  42,  68,  99],
-                [0,   0,   0,   103, 73,  46,  25, 23,  21,  20,  40,  66,  97],
-                [0,   0,   0,   0,   102, 72,  45, 43,  41,  39,  38,  64,  95],
-                [0,   0,   0,   0,   0,   101, 71, 69,  67,  65,  63,  62,  93],
-                [0,   0,   0,   0,   0,   0,   0,  100, 98,  96,  94,  92,  0 ]
-                ])
+output = km3nnet(x)
+prediction = output
+cost = tf.reduce_sum(tf.square(output - y))
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
+correct = tf.Variable(0)
+accuracy = tf.Variable(0) 
 
 
-    def z_index(self):
-        return {712: 0, 676: 1, 640: 2, 604: 3, 568: 4, 532: 5, 496: 6,
-              460: 7, 424: 8, 388: 9, 352: 10, 316: 11, 280: 12,
-              244: 13, 208: 14, 172: 15, 136: 16, 100: 17}
+def make_event(hits, norm_factor=100, tot_mode=True):
+    "Take aa_net hits and put them in cube numpy arrays"
 
-    def line_to_index(self, line):
-        """ Takes a line number and return it's
-        position and it's slice. Where event are made like
-        backslashes"""
-        i, j = np.where(self.lines == line)
-        return np.int(i), np.int(j)
+    tbin_size = 50 # ns
+    event = np.zeros((400, 13, 13, 18, 3))
 
-    def make_event(self, hits, split_dom=True):
-        "Take aa_net hits and put them in cube numpy arrays"
-        ts = []
-        for hit in hits:
-            ts.append(hit.t)
-       
-        t0 = min(ts)
-        t1 = max(ts)
-        dt = t1 - t0 
+    for hit in hits:
 
-        tbin_size = 50
-        num_tbins = np.int(np.ceil(dt / tbin_size))
-        channels = 3 if split_dom else 1
-        event = np.zeros((num_tbins, 13, 13, 18, channels))
+        tot       = hit.tot if tot_mode else 1
 
+        pmt       = hit_to_pmt(hit)
 
-        for hit in hits:
-            tot = hit.tot
-            t = hit.t - t0
+        direction = pmt_direction(pmt)
+
+        x, y, z   = pmt_to_dom_index(pmt)
+
+        t         = hit_time_to_index(hit)
+
+        event[t, x, y, z] += direction * tot / norm_factor 
             
-            t_index = np.int(np.floor(t / tbin_size))
+    non = event.nonzero()
+    return event[non], np.array(non)
 
-            channel_id = hit.channel_id if split_dom else 0
-            pmt = self.det.get_pmt(hit.dom_id, channel_id)
-            direction = np.array([pmt.dir.x, pmt.dir.y, pmt.dir.z])
-            dom = self.det.get_dom(pmt)
-            line_id = dom.line_id
-            # also valid
-            # line_id = np.ceil(hit.dom_id / 18.)
+def batches(batch_size, test=False, debug=False):
+    f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
+    if debug:
+        indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_DEBUG_EVENTS, replace=False)
+        num_events = NUM_DEBUG_EVENTS 
+    elif test:
+        indices = range(NUM_TRAIN_EVENTS, NUM_EVENTS)
+        num_events = NUM_TEST_EVENTS
+    else:
+        indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_TRAIN_EVENTS, replace=False)
+        num_events = NUM_TRAIN_EVENTS
 
-            z = self.z_index[round(dom.pos.z)] 
-            y, x = self.line_to_index(dom.line_id)
-            try:
-                event[t_index, x, y, z] += direction * tot / self.NORM_FACTOR 
-            except IndexError:
-                event[t_index - 1, x, y, z] += direction * tot / self.NORM_FACTOR 
-                
-        non = event.nonzero()
-        return event[non], np.array(non)
+    for k in range(0, num_events, batch_size):
+        if k + batch_size > num_events:
+            batch_size = k + batch_size - num_events
+        batch = indices[k: k + batch_size]
+        events = np.zeros((batch_size, 400, 13, 13, 18, 3))
+        labels = np.zeros((batch_size, NUM_CLASSES))
+        for i, j in enumerate(batch):
+            # get event bins and tots
+            labels[i] = f['all_labels'][j]
+            tots, bins = f['all_tots'][j], f['all_bins'][j]
 
-    
+            bins = tuple(bins)
+            events[i][bins] = tots
+
+    yield events, labels
+
 def animate_event(event_full):
     """Shows 3D plot of evt"""
     fig = plt.figure()
@@ -194,94 +153,6 @@ def animate_event(event_full):
     ani = animation.ArtistAnimation(fig, ims)
     #writer = animation.writers['ffmpeg']
     plt.show()
-
-f = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
-
-def get_piece_of_event(length, offset=0):
-    assert length <= 100
-    # random indices correspond with (a)nuK40_13
-    i = np.random.randint(NUM_GOOD_EVENTS_3 - 2 * 3432, NUM_GOOD_EVENTS_3)
-    tots = f['all_tots'][i]
-    bins = f['all_bins'][i]
-    # random part of the k40 event
-    j = np.random.randint(0, 240 - length)
-    # take tots from slices j : j + length 
-    ind = np.where(np.logical_and(j <= bins[0], bins[0] < j + length))
-    bins = [bins[0][ind] + offset - j, bins[1][ind], bins[2][ind], bins[3][ind], bins[4][ind]]
-    return bins, tots[ind]
-
-def background_slice(length, main_offset=0):
-    # if random filling is longer than 100 time slices than split in to parts
-    # 240 sortest event? > 376 - 240 = 137 logest 
-    sec = length
-    # first part
-    if length > 100:
-        # random event
-        bins1, tots1 = get_piece_of_event(100)
-        sec = length - 100
-    # second part
-    if length > 100: 
-        bins2, tots2 = get_piece_of_event(sec, offset=100)
-    else:
-        bins2, tots2 = get_piece_of_event(sec)
-
-    if length > 100:
-        tots2 = np.append(tots1, tots2)
-        for i in range(5):
-            bins2[i] = np.append(bins1[i], bins2[i])
-    bins2[0] += main_offset
-    return tuple(bins2), tots2 
-
-
-def batches(batch_size, test=False, debug=False):
-    if debug:
-        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_DEBUG_EVENTS, replace=False)
-        num_events = NUM_DEBUG_EVENTS 
-    elif test:
-        indices = range(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_EVENTS_3)
-        num_events = NUM_GOOD_TEST_EVENTS_3
-    else:
-        indices = np.random.choice(NUM_GOOD_TRAIN_EVENTS_3, NUM_GOOD_TRAIN_EVENTS_3, replace=False)
-        num_events = NUM_GOOD_TRAIN_EVENTS_3
-
-    for k in range(0, num_events, batch_size):
-        if k + batch_size > num_events:
-            batch_size = k + batch_size - num_events
-        batch = indices[k: k + batch_size]
-        events = np.zeros((batch_size, 377, 13, 13, 18, 3))
-        labels = np.zeros((batch_size, NUM_CLASSES))
-        for i, j in enumerate(batch):
-            # get event bins and tots
-            E = f['all_energies'][j]
-            x, y, z = f['all_positions'][j]
-            dx, dy, dz = f['all_directions'][j]
-            labels[i] = [E, x, y, z, dx, dy, dz] 
-
-            tots, bins = f['all_tots'][j], f['all_bins'][j]
-
-            # make random padding
-            len_evt = bins[0][-1] + 1
-            len_pad_tot = 377 - len_evt
-            pad_front = np.random.randint(0, len_pad_tot)
-            pad_back  = pad_front + len_evt
-
-            len_pad_front = pad_front
-            len_pad_back  = 377 - pad_back
-        
-            # fill big event with event data
-            bins[0] += pad_front
-            bins_event = tuple(bins)
-            events[i][bins_event] = tots
-
-            if len_evt != 377:
-                # fill front and back padding
-                bins_front, tots_front = background_slice(pad_front)
-                bins_back,  tots_back  = background_slice(len_pad_back, pad_back)
-
-                events[i][bins_front] = tots_front
-                events[i][bins_back]  = tots_back
-
-        yield events, labels
 
 if __name__ == "__main__":
     pass

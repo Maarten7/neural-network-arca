@@ -14,7 +14,6 @@ from tf_help import conv3d, maxpool3d, weight, bias
 title = 'temporal'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
-MC_HITS_CUTOFF = 5
 
 x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
@@ -70,23 +69,21 @@ def km3nnet(x):
     lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1)
     outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=tf.float32)
     output = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
-    return output 
+    return output
 
 output = km3nnet(x)
 prediction = tf.nn.softmax(output)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=y))
-# Train network with AdamOptimizer
 optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
-# Compute the accuracy
 correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-    
+
 
 def make_event(hits, norm_factor=100, tot_mode=True):
     "Take aa_net hits and put them in cube numpy arrays"
 
     tbin_size = 50 # ns
-    event = np.zeros((400, 13, 13, 18, 333))
+    event = np.zeros((400, 13, 13, 18, 3))
 
     for hit in hits:
 
@@ -115,6 +112,7 @@ def make_labels(code):
         return np.array([0, 0, 1])
 
 
+        
 def batches(batch_size, test=False, debug=False):
     f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
     if debug:
@@ -141,8 +139,8 @@ def batches(batch_size, test=False, debug=False):
             bins = tuple(bins)
             events[i][bins] = tots
 
-        yield events, labels
-        
+    yield events, labels
+
 def animate_event(event_full):
     """Shows 3D plot of evt"""
     fig = plt.figure()

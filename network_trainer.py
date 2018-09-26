@@ -14,8 +14,7 @@ from helper_functions import *
 model, debug = import_model(only_model=False)
 
 num_epochs = 1000 if not debug else 2
-num_events = NUM_DEBUG_EVENTS if debug else NUM_TRAIN_EVENTS
-   
+
 saver = tf.train.Saver()
 
 def save_output(cost, acc=0, epoch=0):
@@ -36,7 +35,6 @@ def train_model(sess):
     batch_size = 10 
     for epoch in range(num_epochs):
         print "epoch", epoch 
-
         #######################################################################
         for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
             # Train
@@ -44,12 +42,11 @@ def train_model(sess):
             sess.run([model.optimizer], feed_dict=feed_dict)
 
             if batch % 100 == 0:
-                acc, c = sess.run([model.accuracy, cost], feed_dict=feed_dict)
+                acc, c = sess.run([model.accuracy, model.cost], feed_dict=feed_dict)
                 save_output(c, acc, epoch)
                 # Save weights every x events
                 save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
                 print '\t save at', batch
-        
         save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
         ########################################################################
 
@@ -69,4 +66,4 @@ def main():
  
 
 if __name__ == "__main__":
-    a = main()
+    main()
