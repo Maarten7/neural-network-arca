@@ -74,7 +74,7 @@ def km3nnet(x):
 output = km3nnet(x)
 prediction = output
 cost = tf.reduce_sum(tf.square(output - y))
-optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
 correct = tf.Variable(0)
 accuracy = tf.Variable(0) 
 
@@ -126,7 +126,9 @@ def batches(batch_size, test=False, debug=False):
         labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
             # get event bins and tots
-            labels[i] = f['all_labels'][j]
+            labels[i,0] = f['all_energies'][j]
+            labels[i,1:4] = f['all_positions'][j]
+            labels[i,4:7] = f['all_directions'][j]
             tots, bins = f['all_tots'][j], f['all_bins'][j]
 
             bins = tuple(bins)
