@@ -83,6 +83,7 @@ def root_files(train=True, test=False, debug=False):
 def doms_hit_pass_threshold(mc_hits, threshold):
     """ checks if there a at least <<threshold>> doms
         hit by monte carlo hits. retuns true or false"""
+    if len(mc_hits) == 0: return False
     dom_id_set = set()
     for hit in mc_hits:
         dom_id = pmt_id_to_dom_id(hit.pmt_id)
@@ -119,13 +120,9 @@ def num_events(threshold):
     print tes
     return tra, tes 
 
-with open('num_events.txt', 'w') as ff:
-    tra, tes = num_events(5)
-    ff.write(repr(tra))
-    ff.write(repr(tes))
-#DIR_TRAIN_EVENTS = {'anueNC': 20050, 'numuCC': 36638, 'nueCC': 30856, 'anumuCC': 38461, 'anueCC': 30970, 'nueNC': 22074, 'nuK40': 41172, 'anuK40': 41172}
-#DIR_TEST_EVENTS =  {'anueNC': 5055, 'numuCC': 8893, 'nueCC': 7623, 'anumuCC': 9540, 'anueCC': 7578, 'nueNC': 5595, 'nuK40': 10293, 'anuK40': 10293}
-#NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
-#NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
-#NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
+DIR_TRAIN_EVENTS = {'anueNC': 17483, 'numuCC': 35222, 'nueCC': 28866, 'anumuCC': 36960, 'anueCC': 28990, 'nueNC': 19418, 'nuK40': 41172, 'anuK40': 41172}
+DIR_TEST_EVENTS = {'anueNC': 4438, 'numuCC': 8593, 'nueCC': 7145, 'anumuCC': 9212, 'anueCC': 7124, 'nueNC': 4946, 'nuK40': 10293, 'anuK40': 10293}
+NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
+NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
+NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
 NUM_DEBUG_EVENTS = 3000
