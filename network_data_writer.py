@@ -12,7 +12,7 @@
     is also saved. These are: the energy, position, direction of the neutrino and the number of hits
     it make on the doms.
 """
-from ROOT import *
+from ROOT import * 
 import aa
 import numpy as np
 import sys
@@ -21,6 +21,7 @@ import importlib
 from helper_functions import *
 
 model = import_model()
+
 
 EventFile.read_timeslices = True
 def data_writer(title):
@@ -70,7 +71,7 @@ def data_writer(title):
                 # only events with more than 3 hits are saved since
                 # 4 hits is needed at least to reconstrucd.
                 num_hits = len(evt.mc_hits)
-                if num_hits > 4 or num_hits == 0: 
+                if doms_hit_pas_threshold(evt.mc_hits, threshold=5) or num_hits == 0: 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
                     tots, bins = model.make_event(evt.hits)
