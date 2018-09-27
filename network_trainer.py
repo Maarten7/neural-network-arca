@@ -61,12 +61,12 @@ def main():
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
     #config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
-    try:
-        saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
-    except:
-        print 'Initalize variables'
-        sess.run(tf.global_variables_initializer())
-    train_model(sess)
+        try:
+            saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
+        except:
+            print 'Initalize variables'
+            sess.run(tf.global_variables_initializer())
+        train_model(sess)
 
 
 if __name__ == "__main__":
