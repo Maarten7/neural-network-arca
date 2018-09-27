@@ -74,7 +74,7 @@ def km3nnet(x):
 output = km3nnet(x)
 prediction = tf.nn.softmax(output)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=y))
-optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
 correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
