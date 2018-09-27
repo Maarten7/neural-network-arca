@@ -23,18 +23,16 @@ saver = tf.train.Saver()
 def writer():
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
     with tf.Session(config=config) as sess:
-        
         saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
 
         ##########################################################################
         print "Testing"
-        # open result file
         with h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (model.title, model.title), 'w') as hfile:
-            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_TEST_EVENTS, model.NUM_CLASSES), dtype='float')
-
+            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, model.NUM_CLASSES), dtype='float')
             i = 0
             batch_size = 30 
             for events, labels in model.batches(batch_size, test=True):
+
                 ts = time()
 
                 feed_dict = {model.x: events, model.y: labels}
