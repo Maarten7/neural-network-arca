@@ -12,15 +12,18 @@ import itertools
 from helper_functions import *
 
 model = import_model()
-title = model.title
 
 dens = False
 "PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
 
 # hdf5 files met (meta)data
-pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (title, title), 'r')
-data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % title, 'r')
+pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (model.title, model.title), 'r')
+data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % model.title, 'r')
+
 predictions = pred_file['all_test_predictions'].value
+pred_energy = predictions[:, 0]
+pred_direction = predictions[:,1:4]
+pred_positions = predictions[:,4:7]
 
 # alle informatie van alle events
 labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
@@ -31,8 +34,15 @@ positions = data_file['all_positions'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EV
 directions = data_file['all_directions'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
 
 l_true = np.argmax(labels, axis=1)
-l_pred = np.argmax(predictions, axis=1)
-eq = np.equal(l_true, l_pred)
+#l_pred = np.argmax(predictions, axis=1)
+#eq = np.equal(l_true, l_pred)
+
+
+a = np.log10(pred_energy[np.where( l_true != 2 )])
+b = np.log10(energies[np.where( l_true != 2 )])
+
+plt.hist2d(a, b, bins=30, range=[[0, 1e8], [0, 1e8]])
+plt.show()
 
 def plot_normelized_with_error(bins, tot_dis, par_dis, ax, label):
     error =  par_dis / tot_dis.astype(float)   * np.sqrt( 1./ par_dis + 1./tot_dis)
@@ -88,9 +98,9 @@ def histogram_split_types(data, xlabel):
         axes[j].set_xlabel(xlabel)
     plt.show()
 
-afstand = np.sqrt(np.sum(positions ** 2, axis=1))
-theta = np.arctan2(directions[:,2],np.sqrt(np.sum(directions[:,0:2]**2, axis=1)))
-phi = np.arctan2(directions[:,1], directions[:,0]) 
+#afstand = np.sqrt(np.sum(positions ** 2, axis=1))
+#theta = np.arctan2(directions[:,2],np.sqrt(np.sum(directions[:,0:2]**2, axis=1)))
+#phi = np.arctan2(directions[:,1], directions[:,0]) 
 
 #histogram_classified_as(np.log10(energies), 'log E')
 #histogram_classified_as(np.log10(num_hits), 'log N hits')
