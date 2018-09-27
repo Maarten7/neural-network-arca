@@ -19,10 +19,14 @@ dens = False
 # hdf5 files met (meta)data
 pred_file = h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (model.title, model.title), 'r')
 data_file = h5py.File(PATH + 'data/hdf5_files/tbin50_all_events_labels_meta_%s.hdf5' % model.title, 'r')
+
 trigger_file = h5py.File(PATH + 'data/hdf5_files/JTrigger_trigger.hdf5', 'r')
 
 # Network output
 predictions = pred_file['all_test_predictions'].value
+pred_energy = predictions[:, 0]
+pred_direction = predictions[:,1:4]
+pred_positions = predictions[:,4:7]
 
 # alle informatie van alle events
 labels = data_file['all_labels'][NUM_GOOD_TRAIN_EVENTS_3:NUM_GOOD_TRAIN_EVENTS_3 + NUM_GOOD_TEST_EVENTS_3]
@@ -37,8 +41,15 @@ triggers = trigger_file['all_test_triggers'].value
 
 # Predictions in to classes
 l_true = np.argmax(labels, axis=1)
-l_pred = np.argmax(predictions, axis=1)
-eq = np.equal(l_true, l_pred)
+#l_pred = np.argmax(predictions, axis=1)
+#eq = np.equal(l_true, l_pred)
+
+
+a = np.log10(pred_energy[np.where( l_true != 2 )])
+b = np.log10(energies[np.where( l_true != 2 )])
+
+plt.hist2d(a, b, bins=30, range=[[0, 1e8], [0, 1e8]])
+plt.show()
 
 def plot_normelized_with_error(bins, tot_dis, par_dis, ax, label):
     error =  par_dis / tot_dis.astype(float)   * np.sqrt( 1./ par_dis + 1./tot_dis)
@@ -126,7 +137,6 @@ phi = np.arctan2(directions[:,1], directions[:,0])
 inward = np.sum(positions * directions, axis=1) < 0
 outward = np.sum(positions * directions, axis=1) > 0
 Rxy = np.sqrt(np.sum(positions[:,0:2] ** 2, axis=1))
-
 
 # all triggered events
 def histogram_trigger(data_histogram, xlabel):
