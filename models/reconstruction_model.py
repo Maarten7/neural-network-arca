@@ -102,6 +102,10 @@ def make_event(hits, norm_factor=100, tot_mode=True):
     non = event.nonzero()
     return event[non], np.array(non)
 
+def make_labels(E, x, y, z, dx, dy, dz):
+    """ Makes Energy position direction target"""
+    return np.array([E, x, y, z, dx, dy, dz)
+
 def batches(batch_size, test=False, debug=False):
     f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
     if debug:
