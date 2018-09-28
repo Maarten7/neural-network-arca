@@ -47,7 +47,7 @@ def pmt_direction(pmt):
     return np.array([direction.x, direction.y, direction.z])
 
 def hit_to_pmt(hit):
-    det.get_pmt(hit.dom_id, hit.channel_id)
+    return det.get_pmt(hit.dom_id, hit.channel_id)
 
 def hit_time_to_index(hit, tbin_size):
     t = hit.t
