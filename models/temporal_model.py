@@ -95,7 +95,7 @@ def make_event(hits, norm_factor=100, tot_mode=True):
 
         x, y, z   = pmt_to_dom_index(pmt)
 
-        t         = hit_time_to_index(hit)
+        t         = hit_time_to_index(hit, tbin_size)
 
         event[t, x, y, z] += direction * tot / norm_factor 
             
