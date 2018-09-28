@@ -119,10 +119,10 @@ def num_events(threshold):
     print tes
     return tra, tes 
 
-with open('num_events.txt', 'w') as ff:
-    tra, tes = num_events(5)
-    ff.write(repr(tra))
-    ff.write(repr(tes))
+#with open('num_events.txt', 'w') as ff:
+#    tra, tes = num_events(5)
+#    ff.write(repr(tra))
+#    ff.write(repr(tes))
 #DIR_TRAIN_EVENTS = {'anueNC': 20050, 'numuCC': 36638, 'nueCC': 30856, 'anumuCC': 38461, 'anueCC': 30970, 'nueNC': 22074, 'nuK40': 41172, 'anuK40': 41172}
 #DIR_TEST_EVENTS =  {'anueNC': 5055, 'numuCC': 8893, 'nueCC': 7623, 'anumuCC': 9540, 'anueCC': 7578, 'nueNC': 5595, 'nuK40': 10293, 'anuK40': 10293}
 #NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
