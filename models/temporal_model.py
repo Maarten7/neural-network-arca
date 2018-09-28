@@ -17,6 +17,7 @@ NUM_CLASSES = 3
 
 x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
+keep_prob = tf.placeholder(tf.float32)
 
 nodes =   {"l1": 25,
            "l2": 35,
@@ -51,8 +52,11 @@ def cnn(input_slice):
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l3"]) + biases["l3"])
 
+    fc = tf.nn.dropout(fc, keep_prob)
+
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l4"]) + biases["l4"])
+
     return fc
 
 def km3nnet(x):
