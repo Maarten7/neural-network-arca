@@ -40,7 +40,7 @@ def train_model(sess):
         for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
 
             # Train
-            feed_dict = {model.x: events, model.y: labels} 
+            feed_dict = {model.x: events, model.y: labels, model.keep_prob: 0.8} 
             sess.run([model.optimizer], feed_dict=feed_dict)
 
             if batch % 100 == 0:
