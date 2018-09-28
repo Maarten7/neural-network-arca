@@ -70,8 +70,7 @@ def data_writer(title):
 
                 # only events with more than 3 hits are saved since
                 # 4 hits is needed at least to reconstrucd.
-                num_hits = len(evt.mc_hits)
-                if doms_hit_pas_threshold(evt.mc_hits, threshold=5) or num_hits == 0: 
+                if doms_hit_pass_threshold(evt.mc_hits, threshold=5, pass_k40=True): 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
                     tots, bins = model.make_event(evt.hits)
@@ -86,7 +85,7 @@ def data_writer(title):
 
                     # K40 have no energy, nhits, posistion and directions.
                     # all are set to zero
-                    if num_hits == 0:
+                    if len(evt.mc_hits) == 0:
                         dset_E[i] = 0
                         dset_p[i] = [0, 0, 0]
                         dset_d[i] = [0, 0, 0] 

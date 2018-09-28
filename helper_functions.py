@@ -17,7 +17,6 @@ PATH = "/user/postm/neural-network-arca/"
 LOG_DIR = PATH + "log"
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
-det = Det(PATH + 'data/km3net_115.det')
 
 def pmt_id_to_dom_id(pmt_id):
     #channel_id = (pmt_id - 1) % 31
@@ -80,10 +79,11 @@ def root_files(train=True, test=False, debug=False):
             n = make_file_str(evt_type, i)
             yield n, evt_type
 
-def doms_hit_pass_threshold(mc_hits, threshold):
+def doms_hit_pass_threshold(mc_hits, threshold, pass_k40):
     """ checks if there a at least <<threshold>> doms
         hit by monte carlo hits. retuns true or false"""
-    if len(mc_hits) == 0: return False
+    if len(mc_hits) == 0: return pass_k40 
+
     dom_id_set = set()
     for hit in mc_hits:
         dom_id = pmt_id_to_dom_id(hit.pmt_id)
