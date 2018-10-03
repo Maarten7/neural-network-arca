@@ -3,6 +3,7 @@
 *.root
 *.out
 *.png
+weights/
 test.py
 =======
 # Byte-compiled / optimized / DLL files

@@ -17,6 +17,7 @@ NUM_CLASSES = 7 # energie, x, y, z, dx, dy, dz
 
 x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
+keep_prob = tf.placeholder(tf.float32)
 
 nodes =   {"l1": 25,
            "l2": 35,
@@ -50,9 +51,12 @@ def cnn(input_slice):
     
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l3"]) + biases["l3"])
-
+        
+    fc = tf.nn.dropout(fc, keep_prob)
+        
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l4"]) + biases["l4"])
+
     return fc
 
 def km3nnet(x):
@@ -74,7 +78,7 @@ def km3nnet(x):
 output = km3nnet(x)
 prediction = output
 cost = tf.reduce_sum(tf.square(output - y))
-optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
 correct = tf.Variable(0)
 accuracy = tf.Variable(0) 
 
@@ -95,7 +99,7 @@ def make_event(hits, norm_factor=100, tot_mode=True):
 
         x, y, z   = pmt_to_dom_index(pmt)
 
-        t         = hit_time_to_index(hit)
+        t         = hit_time_to_index(hit, tbin_size)
 
         event[t, x, y, z] += direction * tot / norm_factor 
             
@@ -126,7 +130,9 @@ def batches(batch_size, test=False, debug=False):
         labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
             # get event bins and tots
-            labels[i] = f['all_labels'][j]
+            labels[i,0] = f['all_energies'][j]
+            labels[i,1:4] = f['all_positions'][j]
+            labels[i,4:7] = f['all_directions'][j]
             tots, bins = f['all_tots'][j], f['all_bins'][j]
 
             bins = tuple(bins)

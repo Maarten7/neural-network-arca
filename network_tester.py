@@ -35,7 +35,7 @@ def writer():
 
                 ts = time()
 
-                feed_dict = {model.x: events, model.y: labels}
+                feed_dict = {model.x: events, model.y: labels, model.keep_prob = 1.}
                 p = sess.run(model.prediction, feed_dict=feed_dict)
 
                 dset_pred[i: i + batch_size] = p

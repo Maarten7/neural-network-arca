@@ -40,7 +40,7 @@ def train_model(sess):
         for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
 
             # Train
-            feed_dict = {model.x: events, model.y: labels} 
+            feed_dict = {model.x: events, model.y: labels, model.keep_prob: 0.8} 
             sess.run([model.optimizer], feed_dict=feed_dict)
 
             if batch % 100 == 0:
@@ -61,12 +61,12 @@ def main():
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
     #config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
-    try:
-        saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
-    except:
-        print 'Initalize variables'
-        sess.run(tf.global_variables_initializer())
-    train_model(sess)
+        try:
+            saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
+        except:
+            print 'Initalize variables'
+            sess.run(tf.global_variables_initializer())
+        train_model(sess)
 
 
 if __name__ == "__main__":
