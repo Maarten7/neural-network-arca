@@ -23,8 +23,7 @@ lines = np.array([
             [0,   0,   0,   0,   0,   0,   0,  100, 98,  96,  94,  92,  0 ]])
 
 
-def z_index():
-    return {712: 0, 676: 1, 640: 2, 604: 3, 568: 4, 532: 5,
+z_index =  {712: 0, 676: 1, 640: 2, 604: 3, 568: 4, 532: 5,
             496: 6, 460: 7, 424: 8, 388: 9, 352: 10, 316: 11, 
             280: 12,244: 13, 208: 14, 172: 15, 136: 16, 100: 17}
 
@@ -47,7 +46,7 @@ def pmt_direction(pmt):
     return np.array([direction.x, direction.y, direction.z])
 
 def hit_to_pmt(hit):
-    det.get_pmt(hit.dom_id, hit.channel_id)
+    return det.get_pmt(hit.dom_id, hit.channel_id)
 
 def hit_time_to_index(hit, tbin_size):
     t = hit.t

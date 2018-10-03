@@ -17,6 +17,7 @@ NUM_CLASSES = 3
 
 x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
+keep_prob = tf.placeholder(tf.float32)
 
 nodes =   {"l1": 25,
            "l2": 35,
@@ -51,8 +52,11 @@ def cnn(input_slice):
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l3"]) + biases["l3"])
 
+    fc = tf.nn.dropout(fc, keep_prob)
+
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l4"]) + biases["l4"])
+
     return fc
 
 def km3nnet(x):
@@ -74,7 +78,7 @@ def km3nnet(x):
 output = km3nnet(x)
 prediction = tf.nn.softmax(output)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=y))
-optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
 correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
@@ -95,7 +99,7 @@ def make_event(hits, norm_factor=100, tot_mode=True):
 
         x, y, z   = pmt_to_dom_index(pmt)
 
-        t         = hit_time_to_index(hit)
+        t         = hit_time_to_index(hit, tbin_size)
 
         event[t, x, y, z] += direction * tot / norm_factor 
             
