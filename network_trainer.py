@@ -32,24 +32,26 @@ def train_model(sess):
     """ trains model,
         input sess, a tensorflow session."""
     print 'Start training'
-    batch_size = 10 
+    batch_size = 15 
     for epoch in range(num_epochs):
 
-        print "epoch", epoch 
         #######################################################################
         for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
+    
+            print batch
 
             # Train
             feed_dict = {model.x: events, model.y: labels, model.keep_prob: 0.8} 
             sess.run([model.optimizer], feed_dict=feed_dict)
 
-            if batch % 100 == 0:
-                acc, c = sess.run([model.accuracy, model.cost], feed_dict=feed_dict)
+            if batch % 10 == 0:
+                acc, c, p = sess.run([model.accuracy, model.cost, model.prediction], feed_dict=feed_dict)
                 save_output(c, acc, epoch)
 
+                print p
                 # Save weights every x events
-                save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
                 print '\t save at', batch
+                save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
 
             save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
         ########################################################################
@@ -62,7 +64,8 @@ def main():
     #config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         try:
-            saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
+            pass
+            #saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
         except:
             print 'Initalize variables'
             sess.run(tf.global_variables_initializer())
