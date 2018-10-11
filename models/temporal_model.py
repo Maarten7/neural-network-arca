@@ -7,7 +7,7 @@ import matplotlib.animation as animation
 import matplotlib
 import h5py
 
-from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS, PATH
+from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS, PATH, NUM_EVENTS
 from detector_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt, hit_time_to_index
 from tf_help import conv3d, maxpool3d, weight, bias
 
@@ -52,7 +52,7 @@ def cnn(input_slice):
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l3"]) + biases["l3"])
 
-    fc = tf.nn.dropout(fc, keep_prob)
+    #fc = tf.nn.dropout(fc, keep_prob)
 
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l4"]) + biases["l4"])
@@ -78,7 +78,7 @@ def km3nnet(x):
 output = km3nnet(x)
 prediction = tf.nn.softmax(output)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=y))
-optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-2).minimize(cost)
 correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
@@ -133,6 +133,7 @@ def batches(batch_size, test=False, debug=False):
         if k + batch_size > num_events:
             batch_size = k + batch_size - num_events
         batch = indices[k: k + batch_size]
+
         events = np.zeros((batch_size, 400, 13, 13, 18, 3))
         labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
@@ -143,7 +144,7 @@ def batches(batch_size, test=False, debug=False):
             bins = tuple(bins)
             events[i][bins] = tots
 
-    yield events, labels
+        yield events, labels
 
 def animate_event(event_full):
     """Shows 3D plot of evt"""
