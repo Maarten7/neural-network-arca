@@ -17,15 +17,15 @@ num_epochs = 1000 if not debug else 2
 
 saver = tf.train.Saver()
 
-def save_output(cost, acc=0, epoch=0):
+def save_output(cost, acc=0, epoch=0, batch=0):
     """ writes accuracy and cost to file
         input acc, accuracy value to write to file
         input cost, cost value to write to file"""
 
-    print "Epoch %s\tcost: %f\tacc: %f" % (epoch, cost, acc)
+    print "Epoch %s\tcost: %f\tacc: %f\tbatch: %i" % (epoch, cost, acc, batch)
 
     with open(PATH + 'data/results/%s/epoch_cost_acc.txt' % (model.title), 'a') as f:
-        f.write(str(epoch) + ',' + str(cost) + ',' + str(acc) + '\n')
+        f.write(str(epoch) + ',' + str(cost) + ',' + str(acc) + ',' + str(batch) + '\n')
 
 
 def train_model(sess):
@@ -38,19 +38,16 @@ def train_model(sess):
         #######################################################################
         for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
     
-            print batch
-
             # Train
-            feed_dict = {model.x: events, model.y: labels, model.keep_prob: 0.8} 
-            sess.run([model.optimizer], feed_dict=feed_dict)
+            feed_dict = {model.x: events, model.y: labels, model.keep_prob: .8} 
+            sess.run([model.train_op], feed_dict=feed_dict)
 
-            if batch % 10 == 0:
-                acc, c, p = sess.run([model.accuracy, model.cost, model.prediction], feed_dict=feed_dict)
-                save_output(c, acc, epoch)
-
-                print p
+            if batch % 100 == 0:
+                feed_dict[model.keep_prob] = 1
+                acc, cost, pred = sess.run([model.accuracy, model.cost, model.prediction], feed_dict=feed_dict)
+                save_output(cost, acc, epoch, batch)
+                print pred
                 # Save weights every x events
-                print '\t save at', batch
                 save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
 
             save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
@@ -64,8 +61,7 @@ def main():
     #config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         try:
-            pass
-            #saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
+            saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
         except:
             print 'Initalize variables'
             sess.run(tf.global_variables_initializer())
