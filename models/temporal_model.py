@@ -52,7 +52,7 @@ def cnn(input_slice):
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l3"]) + biases["l3"])
 
-    #fc = tf.nn.dropout(fc, keep_prob)
+    fc = tf.nn.dropout(fc, keep_prob)
 
     fc = tf.nn.sigmoid(
         tf.matmul(fc, weights["l4"]) + biases["l4"])
@@ -62,23 +62,52 @@ def cnn(input_slice):
 def km3nnet(x):
     """ input: event tensor numpy shape 400, 18, 18, 13, 3
         output: label prediction shape 3 (one hot encoded)"""
-    out_time_bin = []
+    out_time_bin = [] 
     # loop over 400 time slices
-    for i in range(x._shape_as_list()[1]):
+    for i in range(400):
         input_slice = x[:,i,:,:,:,:] 
-        fc = cnn(input_slice)
+
+        conv1 = tf.nn.relu(
+            conv3d(input_slice, weights["l1"]) + biases["l1"])
+
+        conv2 = tf.nn.relu(
+            conv3d(conv1, weights["l2"]) + biases["l2"])
+
+        conv2 = maxpool3d(conv2)
+
+        elements = np.prod(conv2._shape_as_list()[1:])
+
+        fc = tf.reshape(conv2, [-1, elements])
+        
+        fc = tf.nn.relu(
+            tf.matmul(fc, weights["l3"]) + biases["l3"])
+
+        fc = tf.nn.dropout(fc, keep_prob)
+
+        fc = tf.nn.relu(
+            tf.matmul(fc, weights["l4"]) + biases["l4"])
+        
         out_time_bin.append(fc)
 
     c = tf.concat(out_time_bin, 1)
-    lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1)
-    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, [c], dtype=tf.float32)
-    output = tf.matmul( outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
-    return output
+    c = tf.reshape(c, [-1, 400, 40])
+    c = tf.unstack(c, 400, 1)
+
+    lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1.)
+    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, c, dtype=tf.float32)
+
+    output = tf.matmul(outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+    return output 
 
 output = km3nnet(x)
 prediction = tf.nn.softmax(output)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=output, labels=y))
-optimizer = tf.train.AdamOptimizer(learning_rate=1e-2).minimize(cost)
+
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-3)
+gvs = optimizer.compute_gradients(cost)
+capped_gvs= [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
+train_op = optimizer.apply_gradients(capped_gvs)
+
 correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
@@ -114,8 +143,6 @@ def make_labels(code):
         return np.array([0, 1, 0])
     else:
         return np.array([0, 0, 1])
-
-
         
 def batches(batch_size, test=False, debug=False):
     f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
@@ -150,13 +177,15 @@ def animate_event(event_full):
     """Shows 3D plot of evt"""
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    event_full = event_full.reshape((-1,13,13,18))
+
+    event_full = np.sqrt(np.sum(np.square(event_full), axis=4))
 
     ims = []
-    for event in event_full:
+    for i, event in enumerate(event_full):
         x, y, z = event.nonzero()
         k = event[event.nonzero()]
         sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=matplotlib.colors.LogNorm(0.1, 350))
+        ax.text2D(0, 0, i)
         ims.append([sc])
     ax.set_xlim([0,13])
     ax.set_ylim([0,13])
