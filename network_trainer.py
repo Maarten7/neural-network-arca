@@ -44,9 +44,8 @@ def train_model(sess):
 
             if batch % 100 == 0:
                 feed_dict[model.keep_prob] = 1
-                acc, cost, pred = sess.run([model.accuracy, model.cost, model.prediction], feed_dict=feed_dict)
+                acc, cost = sess.run([model.accuracy, model.cost], feed_dict=feed_dict)
                 save_output(cost, acc, epoch, batch)
-                print pred
                 # Save weights every x events
                 save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
 
