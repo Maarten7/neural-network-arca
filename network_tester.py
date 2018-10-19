@@ -27,15 +27,15 @@ def writer():
 
         ##########################################################################
         print "Testing"
-        with h5py.File(PATH + 'data/results/%s/test_result_%s.hdf5' % (model.title, model.title), 'w') as hfile:
-            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_GOOD_TEST_EVENTS_3, model.NUM_CLASSES), dtype='float')
+        with h5py.File(PATH + 'data/results/%s/20000ns_test_result_%s.hdf5' % (model.title, model.title), 'w') as hfile:
+            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_TEST_EVENTS, model.NUM_CLASSES), dtype='float')
             i = 0
             batch_size = 30 
             for events, labels in model.batches(batch_size, test=True):
 
                 ts = time()
 
-                feed_dict = {model.x: events, model.y: labels}
+                feed_dict = {model.x: events, model.y: labels, model.keep_prob: 1.}
                 p = sess.run(model.prediction, feed_dict=feed_dict)
 
                 dset_pred[i: i + batch_size] = p

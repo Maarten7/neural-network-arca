@@ -60,12 +60,12 @@ def import_model(only_model=True):
     except IndexError:
         return model, False
 
-def make_file_str(evt_type, i):
+def make_file_str(evt_type, i, J='JEW'):
     """ returns a file str of evt_type root files"""
     i = str(i)
     path = PATH + 'data/root_files'
-    path += '/out_JEW_km3_v4_{0}_{1}.evt.root'
-    n = path.format(evt_type, i)
+    path += '/out_{2}_km3_v4_{0}_{1}.evt.root'
+    n = path.format(evt_type, i, J)
     return n
 
 def root_files(train=True, test=False, debug=False):
@@ -77,6 +77,16 @@ def root_files(train=True, test=False, debug=False):
     for i in trange:
         for evt_type in EVT_TYPES:
             n = make_file_str(evt_type, i)
+            yield n, evt_type
+
+def trigger_files(train=True, test=False, debug=False):
+    trange = []
+    if train: trange = range(1, 13)
+    if test: trange += range(13,16) 
+    if debug: trange = range(1, 4) 
+    for i in trange:
+        for evt_type in EVT_TYPES:
+            n = make_file_str(evt_type, i, J='JTP')
             yield n, evt_type
 
 def doms_hit_pass_threshold(mc_hits, threshold, pass_k40):
