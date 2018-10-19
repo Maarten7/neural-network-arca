@@ -79,11 +79,10 @@ correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
 
-def make_event(hits, norm_factor=100, tot_mode=True):
+def make_event(hits, norm_factor=100, tot_mode=True, tbin_size=50):
     "Take aa_net hits and put them in cube numpy arrays"
 
-    tbin_size = 50 # ns
-    event = np.zeros((400, 13, 13, 18, 3))
+    event = np.zeros((20000 / tbin_size, 13, 13, 18, 3))
 
     for hit in hits:
 
