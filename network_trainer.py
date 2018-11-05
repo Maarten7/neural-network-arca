@@ -39,11 +39,12 @@ def train_model(sess):
         for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
     
             # Train
-            feed_dict = {model.x: events, model.y: labels, model.keep_prob: .8} 
+            feed_dict = {model.x: events, model.y: labels, model.keep_prob: .8, model.learning_rate: 0.003 * .93 ** epoch} 
             sess.run([model.train_op], feed_dict=feed_dict)
 
             if batch % 100 == 0:
-                feed_dict[model.keep_prob] = 1
+                val_events, val_labels = model.get_validation_set()
+                feed_dict = {model.x: val_events, model.y: val_labels, model.keep_prob: 1}
                 acc, cost = sess.run([model.accuracy, model.cost], feed_dict=feed_dict)
                 save_output(cost, acc, epoch, batch)
                 # Save weights every x events

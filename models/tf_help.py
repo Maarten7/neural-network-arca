@@ -11,9 +11,9 @@ def maxpool3d(x):
         padding='SAME')
 
 def weight(shape):
-    w = tf.Variable(tf.random_normal(shape=shape), name="Weights")
+    w = tf.Variable(tf.contrib.layers.variance_scaling_initializer()(shape=shape), name="Weights")
     return w
 
 def bias(shape):
-    b = tf.Variable(tf.random_normal(shape=[shape]), name="Bias")
+    b = tf.Variable(tf.contrib.layers.variance_scaling_initializer()(shape=[shape]), name="Bias")
     return b
