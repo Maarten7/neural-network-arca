@@ -1,14 +1,16 @@
 import h5py 
 import numpy as np
 import matplotlib.pyplot as plt
-
+import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.metrics import confusion_matrix
 import itertools
 #from helper_functions import *
 
 
+matplotlib.rcParams.update({'font.size': 22})
 dens = False
+save = False 
 "PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
 
 # hdf5 files met (meta)data
@@ -59,7 +61,7 @@ def plot_confusion_matrix():
     err_cm = cm * np.sqrt( 1. / cm + 1. / summ) 
 
     plt.imshow(cm, cmap=plt.cm.Blues)
-    plt.title('normalized confusion matrix')
+    plt.title('Normalized confusion matrix')
     #plt.colorbar()
     tick_marks = np.arange(3)
 
@@ -71,6 +73,12 @@ def plot_confusion_matrix():
     plt.xlabel('Predicted label')
     for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, "{0:.1f} $\pm$ {1:.1f} %".format(cm[i,j], err_cm[i,j]), horizontalalignment='center', color='red')
+    if save: 
+        manager = plt.get_current_fig_manager()
+        #manager.window.showMaximized()
+        manager.resize(*manager.window.maxsize())
+        #manager.frame.Maximize(True)
+        plt.savefig('confusion_matrix' + '.pdf')
 
     plt.show()
 
@@ -105,7 +113,12 @@ def histogram_classified_as(data_histogram, xlabel, split=True):
     ax2.set_ylabel('Fraction of track events classified as')
     ax2.set_xlabel(xlabel)
     fig.set_size_inches(11.69, 8.27, forward=False)
-    #fig.savefig('histogram_as_' + xlabel + '.pdf', dpi=500)
+    if save: 
+        manager = plt.get_current_fig_manager()
+        #manager.window.showMaximized()
+        manager.resize(*manager.window.maxsize())
+        #manager.frame.Maximize(True)
+        fig.savefig('histogram_as_' + xlabel.replace(" ", "_") + '.pdf')
     plt.show()
     
 def histogram_split_types(data, xlabel):
@@ -122,7 +135,8 @@ def histogram_split_types(data, xlabel):
         axes[j].set_ylabel('Fraction of events classified as %s' % (label_string[j]))
         axes[j].set_xlabel(xlabel)
     fig.set_size_inches(11.69, 8.27, forward=False) 
-    #fig.savefig('histogram_split_types_' + xlabel + '.pdf', dpi=500)
+    if save:
+        fig.savefig('histogram_split_types_' + xlabel.replace(" ", "_") + '.pdf')
     plt.show()
 
 def histogram_w(data_histogram, xlabel):
@@ -140,6 +154,8 @@ def histogram_w(data_histogram, xlabel):
     ax1.set_title('Classification events')
     ax1.set_ylabel('Fraction of events classified as')
     ax1.set_xlabel(xlabel)
+    if save:
+        fig.savefig('Jtrigger_' + xlabel.replace(" ", "_") + '.pdf')
     plt.show()
 
 # all triggered events
@@ -155,14 +171,15 @@ def histogram_trigger(data_histogram, xlabel):
     ax1.set_title('Trigger')
     ax1.set_ylabel('Fraction of events triggers correctly')
     ax1.set_xlabel(xlabel)
-#    fig.savefig('trigger_' + xlabel + '.pdf', dpi=500)
+    if save:
+        fig.savefig('trigger_' + xlabel.replace(" ", "_") + '.pdf')
     plt.show()
 
 def events_triggerd_as_K40():
     print 'K3NNET  ', 100 * np.sum((l_pred != 2) & (l_true == 2)) / float(np.sum( l_true == 2)) 
     print 'JTrigger', 100 / float(np.sum( l_true == 2))
 
-#plot_confusion_matrix()
+plot_confusion_matrix()
 
 #histogram_classified_as(np.log10(energies), 'log E', Rxy < 250)
 #histogram_classified_as(np.log10(energies), 'log E', ((250 < Rxy) & ( Rxy < 500)))
@@ -179,8 +196,8 @@ def events_triggerd_as_K40():
 #histogram_classified_as(theta, 'theta')
 #histogram_classified_as(phi, 'phi')
 
-histogram_w(np.log10(energies), 'log E')
-histogram_w(np.log10(num_hits), 'log N hits')
+#histogram_w(np.log10(energies), 'log E')
+#histogram_w(np.log10(num_hits), 'log N hits')
 
 #histogram_split_types(np.log10(energies), 'log E')
 #histogram_split_types(np.log10(num_hits), 'log N hits')
