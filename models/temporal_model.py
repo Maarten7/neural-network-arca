@@ -14,8 +14,9 @@ from tf_help import conv3d, maxpool3d, weight, bias
 title = 'temporal'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
+num_mini_timeslices = 200
 
-x = tf.placeholder(tf.float32, [None, 400, 13, 13, 18, 3], name="X_placeholder")
+x = tf.placeholder(tf.float32, [None, num_mini_timeslices, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
 keep_prob = tf.placeholder(tf.float32)
 
@@ -64,7 +65,7 @@ def km3nnet(x):
         output: label prediction shape 3 (one hot encoded)"""
     out_time_bin = [] 
     # loop over 400 time slices
-    for i in range(400):
+    for i in range(num_mini_timeslices):
         input_slice = x[:,i,:,:,:,:] 
 
         conv1 = tf.nn.relu(
@@ -90,8 +91,8 @@ def km3nnet(x):
         out_time_bin.append(fc)
 
     c = tf.concat(out_time_bin, 1)
-    c = tf.reshape(c, [-1, 400, 40])
-    c = tf.unstack(c, 400, 1)
+    c = tf.reshape(c, [-1, num_mini_timeslices, 40])
+    c = tf.unstack(c, num_mini_timeslices, 1)
 
     lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1.)
     outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, c, dtype=tf.float32)
@@ -146,7 +147,8 @@ def make_labels(code):
         return np.array([0, 0, 1])
         
 def batches(batch_size, test=False, debug=False):
-    f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
+    #f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
+    f = h5py.File(PATH + 'data/hdf5_files/20000ns_100ns_all_events_labels_meta_%s.hdf5' % title, 'r')
     if debug:
         indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_DEBUG_EVENTS, replace=False)
         num_events = NUM_DEBUG_EVENTS 
@@ -162,7 +164,7 @@ def batches(batch_size, test=False, debug=False):
             batch_size = k + batch_size - num_events
         batch = indices[k: k + batch_size]
 
-        events = np.zeros((batch_size, 400, 13, 13, 18, 3))
+        events = np.zeros((batch_size, num_mini_timeslices, 13, 13, 18, 3))
         labels = np.zeros((batch_size, NUM_CLASSES))
         for i, j in enumerate(batch):
             # get event bins and tots

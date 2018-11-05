@@ -55,15 +55,14 @@ def data_writer(title):
         ####################################################    
         i = 0
         for root_file, evt_type in root_files(test=True):
-            print root_file 
+            type_index = EVT_TYPES.index(evt_type)
+            print root_file, evt_type, type_index
+
             f = EventFile(root_file)
             f.use_tree_index_for_mc_reading = True
             num_events = len(f)
-            type_index = EVT_TYPES.index(evt_type)
-
 
             ####################################################    
-           
             for j, evt in enumerate(f):
                 # progress bar
                 if j % 250 == 0:
@@ -76,12 +75,12 @@ def data_writer(title):
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
                     tots, bins = model.make_event(evt.hits, tbin_size=100)
-                    label = model.make_labels(evt_type)
+                    label = model.make_labels(type_index)
                     
+                    dset_l[i] = label 
                     dset_t[i] = tots 
                     dset_b[i] = bins 
                 
-                    dset_h[i] = 0 
                     dset_y[i] = type_index
 
                     # K40 have no energy, nhits, posistion and directions.
@@ -103,7 +102,6 @@ def data_writer(title):
                         dset_d[i] = [dir.x, dir.y, dir.z]
 
                         #label = model.make_labels(trk.E, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z)
-                    dset_l[i] = label 
                     
                     i += 1
             
