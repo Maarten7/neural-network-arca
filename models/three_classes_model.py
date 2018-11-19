@@ -4,9 +4,9 @@ import numpy as np
 import tensorflow as tf
 import h5py
 
-from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS
+from helper_functions import NUM_TRAIN_EVENTS, NUM_TEST_EVENTS, NUM_DEBUG_EVENTS, PATH
 from detector_handle import pmt_to_dom_index, pmt_direction, hit_to_pmt
-import tf_help import conv3d, maxpool3d, weight, bias
+from tf_help import conv3d, maxpool3d, weight, bias
 
 title = 'three_classes_sum_tot'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
@@ -61,8 +61,10 @@ def km3nnet(x):
 
     fc  = cnn(x) 
 
-    output = tf.matmul(fc, weights([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+    output = tf.matmul(fc, weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
     return output
+
+output = km3nnet(x)
 
 
 def make_event(hits, norm_factor=100, tot_mode=True):
@@ -94,7 +96,7 @@ def make_labels(code):
 
 
 def batches(batch_size, test=False, debug=False):
-    f = h5py.File(PATH + 'data/hdf5_files/all_events_labels_meta_%s.hdf5' % title, 'r')
+    f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
     if debug:
         indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_DEBUG_EVENTS, replace=False)
         num_events = NUM_DEBUG_EVENTS 

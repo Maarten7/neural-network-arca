@@ -108,7 +108,7 @@ def make_event(hits, norm_factor=100, tot_mode=True):
 
 def make_labels(E, x, y, z, dx, dy, dz):
     """ Makes Energy position direction target"""
-    return np.array([E, x, y, z, dx, dy, dz)
+    return np.array([E, x, y, z, dx, dy, dz])
 
 def batches(batch_size, test=False, debug=False):
     f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
@@ -138,7 +138,7 @@ def batches(batch_size, test=False, debug=False):
             bins = tuple(bins)
             events[i][bins] = tots
 
-    yield events, labels
+        yield events, labels
 
 def animate_event(event_full):
     """Shows 3D plot of evt"""

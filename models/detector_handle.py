@@ -50,7 +50,7 @@ def hit_to_pmt(hit):
 
 def hit_time_to_index(hit, tbin_size):
     t = hit.t
-    if   t > 20000: t_index = 399
+    if   t > 20000: t_index = 20000 / tbin_size - 1
     elif t < 0:     t_index = 0
     else:           t_index = np.int(np.floor(t / tbin_size))
     return t_index

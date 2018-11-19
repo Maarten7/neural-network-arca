@@ -113,15 +113,8 @@ def num_events(threshold):
         f = EventFile(root_file)
         f.use_tree_index_for_mc_reading = True
 
-        if 'K40' in evt_type:
-            if any(num in root_file for num in ['13', '14', '15']):
-                tes[evt_type] += len(f) 
-            else:
-                tra[evt_type] += len(f) 
-            continue
-
         for evt in f:
-            if doms_hit_pass_threshold(evt.mc_hits, threshold):
+            if doms_hit_pass_threshold(evt.mc_hits, threshold, pass_k40=False):
                 if any(num in root_file for num in ['13', '14', '15']):
                     tes[evt_type] += 1
                 else:
@@ -131,7 +124,7 @@ def num_events(threshold):
     return tra, tes 
 
 DIR_TRAIN_EVENTS = {'anueNC': 17483, 'numuCC': 35222, 'nueCC': 28866, 'anumuCC': 36960, 'anueCC': 28990, 'nueNC': 19418, 'nuK40': 41172, 'anuK40': 41172}
-DIR_TEST_EVENTS = {'anueNC': 4438, 'numuCC': 8593, 'nueCC': 7145, 'anumuCC': 9212, 'anueCC': 7124, 'nueNC': 4946, 'nuK40': 10293, 'anuK40': 10293}
+DIR_TEST_EVENTS = {'anueNC': 4438, 'numuCC': 8593, 'nueCC': 7145, 'anumuCC': 9212, 'anueCC': 7124, 'nueNC': 4946, 'nuK40': 41172, 'anuK40': 41172}
 NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
 NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
 NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS

@@ -34,11 +34,12 @@ def data_writer(title):
         # Data sets for data tots, bins, and label
         shape = (NUM_EVENTS, )
         dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
-                        #shape = (NUM_EVENTS, 4)
-                        #dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
+        #shape = (NUM_EVENTS, 4)
+        #dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
         shape = (NUM_EVENTS, 5)
         dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
-        shape = (NUM_EVENTS, 3)
+
+        shape = (NUM_EVENTS, model.NUM_CLASSES)
         dset_l = hfile.create_dataset("all_labels", dtype='int64', shape=shape)        
 
         # Data sets for meta data: Energy, n_hits, type, position and direction
@@ -54,15 +55,14 @@ def data_writer(title):
         ####################################################    
         i = 0
         for root_file, evt_type in root_files(test=True):
-            print root_file 
+            type_index = EVT_TYPES.index(evt_type)
+            print root_file, evt_type, type_index
+
             f = EventFile(root_file)
             f.use_tree_index_for_mc_reading = True
             num_events = len(f)
-            type_index = EVT_TYPES.index(evt_type)
-
 
             ####################################################    
-           
             for j, evt in enumerate(f):
                 # progress bar
                 if j % 250 == 0:
@@ -74,14 +74,13 @@ def data_writer(title):
                 if doms_hit_pass_threshold(evt.mc_hits, threshold=5, pass_k40=True): 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
-                    tots, bins = model.make_event(evt.hits)
+                    tots, bins = model.make_event(evt.hits, tbin_size=100)
                     label = model.make_labels(type_index)
                     
+                    dset_l[i] = label 
                     dset_t[i] = tots 
                     dset_b[i] = bins 
-                    dset_l[i] = label 
                 
-                    dset_h[i] = 0 
                     dset_y[i] = type_index
 
                     # K40 have no energy, nhits, posistion and directions.
@@ -101,8 +100,10 @@ def data_writer(title):
                         dset_p[i] = [pos.x, pos.y, pos.z]
                         dir = trk.dir
                         dset_d[i] = [dir.x, dir.y, dir.z]
+
+                        #label = model.make_labels(trk.E, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z)
                     
                     i += 1
             
             ####################################################
-data_writer(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % model.title)
+data_writer(PATH + 'data/hdf5_files/20000ns_100ns_all_events_labels_meta_%s.hdf5' % model.title)
