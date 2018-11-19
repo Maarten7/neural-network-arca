@@ -10,7 +10,7 @@ import h5py
 from tf_help import conv3d, maxpool3d, weight, bias
 from toy_model import *
 
-title = 'temporal'
+title = 'convlstm'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
 num_mini_timeslices = 200
@@ -20,62 +20,24 @@ y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
 keep_prob = tf.placeholder(tf.float32)
 learning_rate = tf.placeholder(tf.float32)
 
-nodes =   {"l1": 25,
-           "l2": 25,
-           "l3": 80,
-           "l4": 40,
-           "l5": 20} 
-           
-weights = {"l1": weight([4, 4, 4, 3, nodes["l1"]]),
-           "l2": weight([3, 3, 3, nodes["l1"], nodes["l2"]]),
-           "l3": weight([11025, nodes["l3"]]),
-           "l4": weight([nodes["l3"], nodes["l4"]])}
-
-biases =  {"l1": bias(nodes["l1"]),
-           "l2": bias(nodes["l2"]),
-           "l3": bias(nodes["l3"]),
-           "l4": bias(nodes["l4"])}
-
-def cnn(mini_timeslice):
-    """ input: event tensor numpy shape 1, 13, 13, 18, 3"""
-    conv1 = tf.nn.relu(
-        conv3d(mini_timeslice, weights["l1"]) + biases["l1"])
-
-    conv2 = tf.nn.relu(
-        conv3d(conv1, weights["l2"]) + biases["l2"])
-
-    conv2 = maxpool3d(conv2)
-
-    elements = np.prod(conv2._shape_as_list()[1:])
-
-    fc = tf.reshape(conv2, [-1, elements])
-    
-    fc = tf.nn.relu(
-        tf.matmul(fc, weights["l3"]) + biases["l3"])
-
-    fc = tf.nn.dropout(fc, keep_prob)
-
-    fc = tf.nn.relu(
-        tf.matmul(fc, weights["l4"]) + biases["l4"])
-
-    return fc
+def lstm_cell():
+    return tf.contrib.rnn.ConvLSTMCell(conv_ndims=3, input_shape=[13, 13, 18, 3], output_channels=10, kernel_shape=[4, 4, 4])
 
 def km3nnet(x):
     """ input: event tensor numpy shape num_minitimeslices, 18, 18, 13, 3
         output: label prediction shape 3 (one hot encoded)"""
     # loop over mini time slices
     mini_timeslices = tf.unstack(x, num_mini_timeslices, 1)
-    out_time_bin = []
-    for ts in mini_timeslices:
-        out_time_bin.append(cnn(ts))
-    c = tf.concat(out_time_bin, 1)
-    c = tf.reshape(c, [-1, num_mini_timeslices, nodes["l4"]])
-    c = tf.unstack(c, num_mini_timeslices, 1)
 
-    lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1.)
-    outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, c, dtype=tf.float32)
+    stacked_lstm = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(3)])
+    
 
-    output = tf.matmul(outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+    outputs, states = tf.contrib.rnn.static_rnn(stacked_lstm, mini_timeslices, dtype=tf.float32)
+    output = tf.reshape(outputs[-1], [-1, 13 * 13 * 18 * 10 ])
+
+    W = weight([13 * 13 * 18 * 10, NUM_CLASSES])
+    b = bias(NUM_CLASSES)
+    output = tf.matmul(output, W) + b
 
     return output 
 
@@ -90,9 +52,9 @@ optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=.7)
 #train_op = optimizer.apply_gradients(capped_gvs)
 train_op = optimizer.minimize(cost)
 
-
 correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
+
 
 if __name__ == "__main__":
     pass

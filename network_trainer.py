@@ -9,6 +9,7 @@ import h5py
 import sys
 from time import time
 from helper_functions import * 
+from models.batch_handle import *
 
 # import neural network model and debug mode
 model, debug = import_model(only_model=False)
@@ -37,14 +38,14 @@ def train_model(sess):
     for epoch in range(begin_epoch, num_epochs):
 
         #######################################################################
-        for batch, (events, labels) in enumerate(model.toy_batches(batch_size=batch_size, debug=debug)):
+        for batch, (events, labels) in enumerate(toy_batches(batch_size=batch_size, debug=debug)):
 
             # Train
             feed_dict = {model.x: events, model.y: labels, model.keep_prob: .8, model.learning_rate: 0.0003 * .93 ** epoch} 
             sess.run([model.train_op], feed_dict=feed_dict)
 
             if batch % 100 == 0:
-                val_events, val_labels = model.get_toy_validation_set()
+                val_events, val_labels = get_toy_validation_set()
                 feed_dict = {model.x: val_events, model.y: val_labels, model.keep_prob: 1}
                 acc, cost = sess.run([model.accuracy, model.cost], feed_dict=feed_dict)
                 save_output(cost, acc, epoch, batch)
@@ -56,7 +57,7 @@ def train_model(sess):
 def main():
     # Session
     print 'Start session'
-    config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
+    config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
     #config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
 #        try:

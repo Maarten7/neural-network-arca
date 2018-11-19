@@ -54,3 +54,34 @@ def hit_time_to_index(hit, tbin_size):
     elif t < 0:     t_index = 0
     else:           t_index = np.int(np.floor(t / tbin_size))
     return t_index
+
+def make_event(hits, norm_factor=100, tot_mode=True, tbin_size=50):
+    "Take aa_net hits and put them in cube numpy arrays"
+
+    event = np.zeros((20000 / tbin_size, 13, 13, 18, 3))
+
+    for hit in hits:
+
+        tot       = hit.tot if tot_mode else 1
+
+        pmt       = hit_to_pmt(hit)
+
+        direction = pmt_direction(pmt)
+
+        x, y, z   = pmt_to_dom_index(pmt)
+
+        t         = hit_time_to_index(hit, tbin_size)
+
+        event[t, x, y, z] += direction * tot / norm_factor 
+            
+    non = event.nonzero()
+    return event[non], np.array(non)
+
+def make_labels(code):
+    """ Makes one hot labels form evt_type code"""
+    if code < 4:
+        return np.array([1, 0, 0])
+    elif code < 6:
+        return np.array([0, 1, 0])
+    else:
+        return np.array([0, 0, 1])
