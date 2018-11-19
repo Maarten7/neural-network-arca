@@ -35,12 +35,18 @@ def train_model(sess):
     batch_size = 15 
     for epoch in range(num_epochs):
 
+        ts = 0
         #######################################################################
         for batch, (events, labels) in enumerate(model.batches(batch_size=batch_size, debug=debug)):
+            print (time() - ts) / batch_size
     
             # Train
             feed_dict = {model.x: events, model.y: labels, model.keep_prob: .8, model.learning_rate: 0.003 * .93 ** epoch} 
+            ts = time()
             sess.run([model.train_op], feed_dict=feed_dict)
+            print (time() - ts) / batch_size
+            
+            ts = time()
 
             if batch % 100 == 0:
                 val_events, val_labels = model.get_validation_set()
