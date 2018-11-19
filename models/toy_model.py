@@ -99,4 +99,4 @@ def add_line():
     return event, label
 
 def make_toy():
-    return fill_matrix()
+    return add_line()
