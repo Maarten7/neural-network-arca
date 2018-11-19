@@ -17,10 +17,33 @@ def get_event_klass_label():
     return event, klass, label
     
 
-def get_next_xyz(x, y, z, label):
-    if np.argmax(label) == 0:
+def get_start(klass):
+    j = np.random.randint(num_mini_timeslices-18)
+    
+    if klass == 0:
+        z = 0
+    elif klass == 1:
+        z = 17
+    else:
+        z = 10
+
+    x = np.random.randint(13)
+    y = np.random.randint(13)
+    
+    return j, x, y, z
+
+
+def fill_noise(event):
+    for i in range(num_mini_timeslices):
+        x, y, z = get_random_xyz()
+        event[i, x, y, z, :] += .30
+    return event
+
+
+def get_next_weird_xyz(x, y, z, label):
+    if klass == 0:
         z = z + 1
-    elif np.argmax(label) == 1:
+    elif klass == 1:
         z = z - 1
 
     if np.random.randint(3) == 0:
@@ -39,38 +62,32 @@ def get_next_xyz(x, y, z, label):
     y = 12 if 12 < y else y
     return x, y, z
 
-def get_start(label):
-    j = np.random.randint(num_mini_timeslices-18)
-    
-    if np.argmax(label) == 0:
+def get_line_start():
+    x, y, z = get_random_xyz()
+    if klass == 0:
+        x = 0
+    elif klass == 1:
+        y = 0
+    elif klass == 2:
         z = 0
-    elif np.argmax(label) == 1:
-        z = 17
-    else:
-        z = 10
-
-    x = np.random.randint(13)
-    y = np.random.randint(13)
+    return x, y, z
     
-    return j, x, y, z
+def get_next_line_xyz(x, y, z, klass)
+    if klass == 0:
+        x += 1
+    elif klass == 1:
+        y += 1
+    elif klass == 2:
+       z += 1 
+    return x, y, z
 
-def fill_noise(event):
-    for i in range(num_mini_timeslices):
-        x, y, z = get_random_xyz()
-        event[i, x, y, z, :] += .30
-    return event
-
-def fill_event(event, label):
-    j, x, y, z = get_start(label)
-    for i in range(18):
-        event[j + i, x, y, z, :] += .30
-        x, y, z = get_next_xyz(x, y, z, label)
-    return event
-
-def random_line():
+def random_movement(n_label):
     event, klass, label = get_event_klass_label()
-    for _ in range(10):
-        event = fill_event(event, label)
+    for _ in range(n_label):
+        j, x, y, z = get_start(label)
+        for i in range(18):
+            event[j + i, x, y, z, :] += .30
+            x, y, z = get_next_weird_xyz(x, y, z, label)
     event = fill_noise(event)
 
     return event, label
@@ -90,13 +107,25 @@ def add_line():
     event, klass, label = get_event_klass_label()
     x, y, z = get_random_xyz()
     if klass == 0:
-        event[:, x, y, :, :] = 1
+        event[:, x, y, :, :] = 1.
     elif klass == 1:
-        event[:, x, :, z, :] = 1
+        event[:, x, :, z, :] = 1.
     elif klass == 2:
-        event[:, :, y, z, :] = 1
+        event[:, :, y, z, :] = 1.
 
     return event, label
 
+def add_line_in_steps(n_lines=10):
+    event, klass, label = get_event_klass_label()
+    for _ in range(n_lines):
+        j, x, y, z = get_line_start(klass)
+        for i in range(18):
+            event[j + i, x, y, z, :] = 1.
+            x, y, z = get_next_line_xyz(x, y, z, klass)
+    return event, label
+
 def make_toy():
-    return fill_matrix()
+#   return fill_matrix()     
+#   return all_line_in_steps()
+#   return random_moment()
+    return add_line()

@@ -69,7 +69,7 @@ def toy_batches(batch_size, debug=False):
             labels[i] = label
         yield events, labels 
 
-def get_toy_validation_set(size=500):
+def get_toy_validation_set(size=100):
     np.random.seed(4)
     events, labels = toy_batches(size).next()
     np.random.seed()
