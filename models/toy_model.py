@@ -72,7 +72,7 @@ def get_line_start():
         z = 0
     return x, y, z
     
-def get_next_line_xyz(x, y, z, klass)
+def get_next_line_xyz(x, y, z, klass):
     if klass == 0:
         x += 1
     elif klass == 1:
