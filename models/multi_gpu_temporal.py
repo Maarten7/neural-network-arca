@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tf_help import conv3d, maxpool3d, weight, bias
+import batch_handle
 
 title = 'multi_gpu'
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
@@ -67,7 +68,7 @@ def train():
         lr = 0.03
         opt = tf.train.GradientDescentOptimizer(lr)
 
-        events, labels =  
+        events, labels = batch_handle.toy_batches(batch_size=20).next()
 
         batch_queue = tf.contrib.slim.prefetch_queue.prefetch_queue([events, labels], capacity=2 * 2)
 
