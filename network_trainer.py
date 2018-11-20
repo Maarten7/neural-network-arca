@@ -34,7 +34,7 @@ def train_model(sess):
     """ trains model,
         input sess, a tensorflow session."""
     print 'Start training'
-    batch_size = 10 
+    batch_size = 15 
     for epoch in range(begin_epoch, num_epochs):
 
         #######################################################################
@@ -48,8 +48,9 @@ def train_model(sess):
                 val_events, val_labels = get_toy_validation_set()
                 feed_dict = {model.x: val_events, model.y: val_labels, model.keep_prob: 1}
                 acc, cost = sess.run([model.accuracy, model.cost], feed_dict=feed_dict)
-                save_output(cost, acc, epoch, batch)
+
                 # Save weights every x events
+                save_output(cost, acc, epoch, batch)
                 save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
         ########################################################################
 

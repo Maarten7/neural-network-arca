@@ -1,12 +1,11 @@
 import numpy as np
 from toy_model import make_toy
 from helper_functions import *
+
 import matplotlib.animation as animation
 import matplotlib
 
-num_mini_timeslices = 200
-EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
-NUM_CLASSES = 3
+num_mini_timeslices = 50
 
 def batches(batch_size, test=False, debug=False):
     #f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')

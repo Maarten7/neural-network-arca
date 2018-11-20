@@ -16,6 +16,7 @@ def get_event_klass_label(num_mini_timeslices):
     
 
 def get_start(klass, num_mini_timeslices):
+    x, y, z = get_random_xyz()
     j = np.random.randint(num_mini_timeslices-18)
     
     if klass == 0:
@@ -25,10 +26,7 @@ def get_start(klass, num_mini_timeslices):
     else:
         z = 10
 
-    x = np.random.randint(13)
-    y = np.random.randint(13)
-    
-    return j, x, y, z
+    return j, x, y, z 
 
 
 def fill_noise(event, num_mini_timeslices):
@@ -60,7 +58,8 @@ def get_next_weird_xyz(x, y, z, label):
     y = 12 if 12 < y else y
     return x, y, z
 
-def get_line_start():
+def get_line_start(klass, num_mini_timeslices):
+    j = np.random.randint(num_mini_timeslices-18)
     x, y, z = get_random_xyz()
     if klass == 0:
         x = 0
@@ -68,7 +67,7 @@ def get_line_start():
         y = 0
     elif klass == 2:
         z = 0
-    return x, y, z
+    return j, x, y, z
     
 
 def fill_noise(event, num_mini_timeslices):
@@ -78,7 +77,7 @@ def fill_noise(event, num_mini_timeslices):
     return event
 
 
-def fill_event(event, label):
+def fill_event(event, label, num_mini_timeslices):
     j, x, y, z = get_start(label, num_mini_timeslices)
     for i in range(18):
         event[j + i, x, y, z, :] += .30
@@ -100,11 +99,13 @@ def get_next_line_xyz(x, y, z, klass):
         y += 1
     elif klass == 2:
        z += 1 
+    if x == 13: x = 0
+    if y == 13: y = 0
     return x, y, z
 
 
-def random_movement(n_label):
-    event, klass, label = get_event_klass_label()
+def random_movement(n_label, num_mini_timeslices):
+    event, klass, label = get_event_klass_label(num_mini_timeslices)
     for _ in range(n_label):
         j, x, y, z = get_start(label)
         for i in range(18):
@@ -139,10 +140,10 @@ def add_line(num_mini_timeslices):
     return event, label
 
 
-def add_line_in_steps(n_lines=10):
-    event, klass, label = get_event_klass_label()
+def add_line_in_steps(n_lines, num_mini_timeslices):
+    event, klass, label = get_event_klass_label(num_mini_timeslices)
     for _ in range(n_lines):
-        j, x, y, z = get_line_start(klass)
+        j, x, y, z = get_line_start(klass, num_mini_timeslices)
         for i in range(18):
             event[j + i, x, y, z, :] = 1.
             x, y, z = get_next_line_xyz(x, y, z, klass)
@@ -150,7 +151,7 @@ def add_line_in_steps(n_lines=10):
 
 
 def make_toy(num_mini_timeslices):
-    return add_line_in_steps(num_mini_timeslices)
+    return add_line_in_steps(30, num_mini_timeslices)
 #   return fill_matrix()     
 #   return all_line_in_steps()
 #   return random_moment()

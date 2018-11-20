@@ -6,12 +6,10 @@ import matplotlib.pyplot as plt
 import h5py
 
 from tf_help import conv3d, maxpool3d, weight, bias
-from toy_model import *
+from helper_functions import EVT_TYPES, NUM_CLASSES
 
 title = 'temporal'
-EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
-NUM_CLASSES = 3
-num_mini_timeslices = 200
+num_mini_timeslices = 50
 
 x = tf.placeholder(tf.float32, [None, num_mini_timeslices, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
