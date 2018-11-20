@@ -1,7 +1,5 @@
 import numpy as np
 
-num_mini_timeslices = 200
-
 def get_random_xyz():
     x = np.random.randint(13)
     y = np.random.randint(13)
@@ -9,7 +7,7 @@ def get_random_xyz():
     return x, y, z
 
 
-def get_event_klass_label():
+def get_event_klass_label(num_mini_timeslices):
     event = np.zeros((num_mini_timeslices, 13, 13, 18, 3))
     klass = np.random.randint(3) 
     label = np.zeros(3)
@@ -39,7 +37,7 @@ def get_next_xyz(x, y, z, label):
     y = 12 if 12 < y else y
     return x, y, z
 
-def get_start(label):
+def get_start(label, num_mini_timeslices):
     j = np.random.randint(num_mini_timeslices-18)
     
     if np.argmax(label) == 0:
@@ -54,29 +52,29 @@ def get_start(label):
     
     return j, x, y, z
 
-def fill_noise(event):
+def fill_noise(event, num_mini_timeslices):
     for i in range(num_mini_timeslices):
         x, y, z = get_random_xyz()
         event[i, x, y, z, :] += .30
     return event
 
 def fill_event(event, label):
-    j, x, y, z = get_start(label)
+    j, x, y, z = get_start(label, num_mini_timeslices)
     for i in range(18):
         event[j + i, x, y, z, :] += .30
         x, y, z = get_next_xyz(x, y, z, label)
     return event
 
-def random_line():
-    event, klass, label = get_event_klass_label()
+def random_line(num_mini_timeslices):
+    event, klass, label = get_event_klass_label(num_mini_timeslices)
     for _ in range(10):
         event = fill_event(event, label)
-    event = fill_noise(event)
+    event = fill_noise(event, num_mini_timeslices)
 
     return event, label
 
-def fill_matrix():
-    event, klass, label = get_event_klass_label()
+def fill_matrix(num_mini_timeslices):
+    event, klass, label = get_event_klass_label(num_mini_timeslices)
     if klass == 0:
         event[:, :, :, :, :] = 1.
     if klass == 1:
@@ -86,8 +84,8 @@ def fill_matrix():
 
     return event, label
 
-def add_line():
-    event, klass, label = get_event_klass_label()
+def add_line(num_mini_timeslices):
+    event, klass, label = get_event_klass_label(num_mini_timeslices)
     x, y, z = get_random_xyz()
     if klass == 0:
         event[:, x, y, :, :] = 1
@@ -98,5 +96,5 @@ def add_line():
 
     return event, label
 
-def make_toy():
-    return add_line()
+def make_toy(num_mini_timeslices):
+    return add_line(num_mini_timeslices)

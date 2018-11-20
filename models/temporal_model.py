@@ -3,8 +3,6 @@ import aa
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import matplotlib
 import h5py
 
 from tf_help import conv3d, maxpool3d, weight, bias

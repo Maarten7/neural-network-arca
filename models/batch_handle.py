@@ -1,6 +1,8 @@
 import numpy as np
 from toy_model import make_toy
 from helper_functions import *
+import matplotlib.animation as animation
+import matplotlib
 
 num_mini_timeslices = 200
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
@@ -64,7 +66,7 @@ def toy_batches(batch_size, debug=False):
         events = np.zeros((batch_size, num_mini_timeslices, 13, 13, 18, 3))
         labels = np.zeros((batch_size, 3))
         for i in range(batch_size):
-            event, label = make_toy()
+            event, label = make_toy(num_mini_timeslices)
             events[i] = event
             labels[i] = label
         yield events, labels 
@@ -118,7 +120,6 @@ def animate_event(event_full):
     for i, event in enumerate(event_full):
         x, y, z = event.nonzero()
         k = event[event.nonzero()]
-        print k
         sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=matplotlib.colors.LogNorm(0.1, 350))
         ims.append([sc])
     ax.set_xlim([0,13])
