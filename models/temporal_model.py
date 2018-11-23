@@ -6,10 +6,34 @@ import matplotlib.pyplot as plt
 import h5py
 
 from tf_help import conv3d, maxpool3d, weight, bias
-from helper_functions import EVT_TYPES, NUM_CLASSES
+from helper_functions import EVT_TYPES, NUM_CLASSES, PATH, NUM_TRAIN_EVENTS
 
 title = 'temporal'
 num_mini_timeslices = 50
+
+#class event_and_label_gen:
+#    def __init__(self, title):
+#        self.title = title
+#
+#    def __call__(self):
+#        with h5py.File(self.title, 'r') as f:
+#            for i in range(NUM_TRAIN_EVENTS):
+#                label = f['all_labels'][i]
+#
+#                bins = f['all_bins'][i]
+#                tots = f['all_tots'][i]
+#
+#                event = np.zeros((num_mini_timeslices, 13, 13, 18, 3))
+#                event[tuple(bins)] = tots
+#            yield event, label
+#            
+#data_set = tf.data.Dataset.from_generator(
+#    generator=event_and_label_gen(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta.hdf5'),
+#    output_types=(tf.float32, tf.int32)
+#    ).batch(15)
+#    output_shapes=(tf.TensorShape([num_mini_timeslices, 13, 13, 18, 3]), tf.TensorShape([3])))
+
+#events, labels = data_set.make_one_shot_iterator().get_next()
 
 x = tf.placeholder(tf.float32, [None, num_mini_timeslices, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
@@ -36,20 +60,28 @@ def cnn(mini_timeslice):
     """ input: event tensor numpy shape 1, 13, 13, 18, 3"""
     conv1 = tf.nn.relu(
         conv3d(mini_timeslice, weights["l1"]) + biases["l1"])
+    
+    conv1 = tf.contrib.layers.batch_norm(conv1)
 
     conv2 = tf.nn.relu(
         conv3d(conv1, weights["l2"]) + biases["l2"])
 
+    conv1 = tf.contrib.layers.batch_norm(conv1)
+
     conv2 = maxpool3d(conv2)
 
-    elements = np.prod(conv2._shape_as_list()[1:])
+    conv2 = tf.contrib.layers.batch_norm(conv2)
 
-    fc = tf.reshape(conv2, [-1, elements])
+    #elements = np.prod(conv2._shape_as_list()[1:])
+
+    fc = tf.reshape(conv2, [-1, 11025])
     
     fc = tf.nn.relu(
         tf.matmul(fc, weights["l3"]) + biases["l3"])
 
     fc = tf.nn.dropout(fc, keep_prob)
+
+    conv1 = tf.contrib.layers.batch_norm(fc)
 
     fc = tf.nn.relu(
         tf.matmul(fc, weights["l4"]) + biases["l4"])
@@ -67,13 +99,12 @@ def km3nnet(x):
     c = tf.concat(out_time_bin, 1)
     c = tf.reshape(c, [-1, num_mini_timeslices, nodes["l4"]])
     c = tf.unstack(c, num_mini_timeslices, 1)
-
     lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1.)
     outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, c, dtype=tf.float32)
-
     output = tf.matmul(outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
 
     return output 
+
 
 output = km3nnet(x)
 prediction = tf.nn.softmax(output)
