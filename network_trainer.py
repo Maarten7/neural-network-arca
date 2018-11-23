@@ -39,7 +39,7 @@ def train_model(sess):
 
         #######################################################################
         for batch, (events, labels) in enumerate(toy_batches(batch_size=batch_size, debug=debug)):
-
+            
             # Train
             feed_dict = {model.x: events, model.y: labels, model.keep_prob: .8, model.learning_rate: 0.0003 * .93 ** epoch} 
             sess.run([model.train_op], feed_dict=feed_dict)

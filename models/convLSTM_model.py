@@ -2,18 +2,13 @@ from ROOT import *
 import aa
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import matplotlib
 import h5py
 
 from tf_help import conv3d, maxpool3d, weight, bias
-from toy_model import *
+from helper_functions import NUM_CLASSES
 
 title = 'convlstm'
-EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
-NUM_CLASSES = 3
-num_mini_timeslices = 200
+num_mini_timeslices = 50 
 
 x = tf.placeholder(tf.float32, [None, num_mini_timeslices, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")
@@ -29,16 +24,20 @@ def km3nnet(x):
     # loop over mini time slices
     mini_timeslices = tf.unstack(x, num_mini_timeslices, 1)
 
-    stacked_lstm = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(3)])
+    stacked_lstm = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(2)])
     
 
     outputs, states = tf.contrib.rnn.static_rnn(stacked_lstm, mini_timeslices, dtype=tf.float32)
     output = tf.reshape(outputs[-1], [-1, 13 * 13 * 18 * 10 ])
 
-    W = weight([13 * 13 * 18 * 10, NUM_CLASSES])
-    b = bias(NUM_CLASSES)
-    output = tf.matmul(output, W) + b
+    W = weight([13 * 13 * 18 * 10, 100])
+    b = bias(100)
+    z = tf.matmul(output, W) + b
 
+    K = weight([100, NUM_CLASSES])
+    k = bias(NUM_CLASSES)
+
+    output = tf.matmul(z, K) + k
     return output 
 
 output = km3nnet(x)

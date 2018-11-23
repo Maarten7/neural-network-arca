@@ -1,10 +1,9 @@
 import tensorflow as tf
 from tf_help import conv3d, maxpool3d, weight, bias
 import batch_handle
+from helper_functions import NUM_CLASSES
 
 title = 'multi_gpu'
-EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
-NUM_CLASSES = 3
 num_mini_timeslices = 200
 
 def km3nnet(x):
@@ -23,7 +22,10 @@ def km3nnet(x):
     output = tf.matmul(output, W) + b
 
     return output 
-    
+
+batch_gen = batch_handle.batches(15)
+def get_batch():
+    return batch_gen.next()
 
 def loss(logits, labels):
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -68,7 +70,7 @@ def train():
         lr = 0.03
         opt = tf.train.GradientDescentOptimizer(lr)
 
-        events, labels = batch_handle.toy_batches(batch_size=20).next()
+        events, labels = get_batch() 
 
         batch_queue = tf.contrib.slim.prefetch_queue.prefetch_queue([events, labels], capacity=2 * 2)
 
