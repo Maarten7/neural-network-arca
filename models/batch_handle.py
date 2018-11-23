@@ -1,6 +1,9 @@
 import numpy as np
+import h5py
+
 from toy_model import make_toy
 from helper_functions import *
+
 
 import matplotlib.animation as animation
 import matplotlib
@@ -9,7 +12,8 @@ num_mini_timeslices = 50
 
 def batches(batch_size, test=False, debug=False):
     #f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
-    f = h5py.File(PATH + 'data/hdf5_files/20000ns_100ns_all_events_labels_meta_%s.hdf5' % title, 'r')
+    #f = h5py.File(PATH + 'data/hdf5_files/20000ns_100ns_all_events_labels_meta_%s.hdf5' % title, 'r')
+    f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta.hdf5', 'r')
     if debug:
         indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_DEBUG_EVENTS, replace=False)
         num_events = NUM_DEBUG_EVENTS 
@@ -41,24 +45,25 @@ def batches(batch_size, test=False, debug=False):
 
         yield events, labels
 
-def get_validation_set(validation_set_size=500):
-    #f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
-    f = h5py.File(PATH + 'data/hdf5_files/20000ns_100ns_all_events_labels_meta_%s.hdf5' % title, 'r')
-    indices = range(NUM_TRAIN_EVENTS, NUM_EVENTS)
+def get_validation_set(validation_set_size=600, batch_size=15):
+    f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
+    
     np.random.seed(0)
-    indices = np.random.choice(indices, validation_set_size, replace=False)
-    np.random.seed()
-    batch = indices
-    events = np.zeros((validation_set_size, num_mini_timeslices, 13, 13, 18, 3))
-    labels = np.zeros((validation_set_size, NUM_CLASSES))
-    for i, j in enumerate(batch):
-        # get event bins and tots
-        labels[i] = f['all_labels'][j]
-        tots, bins = f['all_tots'][j], f['all_bins'][j]
+    for k in range(validation_set_size / batch_size):
+        indices = range(0, NUM_TEST_EVENTS)
+        indices = np.random.choice(indices, batch_size, replace=False)
+        batch = indices
+        events = np.zeros((batch_size, num_mini_timeslices, 13, 13, 18, 3))
+        labels = np.zeros((batch_size, NUM_CLASSES))
+        for i, j in enumerate(batch):
+            # get event bins and tots
+            labels[i] = f['all_labels'][j]
+            tots, bins = f['all_tots'][j], f['all_bins'][j]
 
-        bins = tuple(bins)
-        events[i][bins] = tots
-    return events, labels
+            bins = tuple(bins)
+            events[i][bins] = tots
+
+        yield events, labels
 
 def toy_batches(batch_size, debug=False):
     while True:

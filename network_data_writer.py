@@ -19,12 +19,19 @@ import sys
 import h5py
 import importlib
 from helper_functions import *
+from models.detector_handle import make_event, make_labels
 
-model = import_model()
-
+def random_index_gen(num_events, test=False):
+    if test:
+        for i in range(num_events):
+            yield i
+    else:
+        indices = np.random.permutation(num_events)
+        for i in indices:
+            yield i
 
 EventFile.read_timeslices = True
-def data_writer(title):
+def data_writer(title, tbin_size, train, test):
     # these datatypes allow for variable length array to be saved into hdf5 format
     # this is needed since tots and bins differ per event
     dtf = h5py.special_dtype(vlen=np.dtype('float64'))
@@ -39,7 +46,7 @@ def data_writer(title):
         shape = (NUM_EVENTS, 5)
         dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
 
-        shape = (NUM_EVENTS, model.NUM_CLASSES)
+        shape = (NUM_EVENTS, NUM_CLASSES)
         dset_l = hfile.create_dataset("all_labels", dtype='int64', shape=shape)        
 
         # Data sets for meta data: Energy, n_hits, type, position and direction
@@ -53,8 +60,14 @@ def data_writer(title):
         dset_d = hfile.create_dataset('all_directions', dtype='float64', shape=shape)
 
         ####################################################    
-        i = 0
-        for root_file, evt_type in root_files(test=True):
+        if train and test: num_events = NUM_EVENTS
+        elif train: num_events = NUM_TRAIN_EVENTS
+        elif test: num_events = NUM_TEST_EVENTS
+
+        random_i = random_index_gen(num_events, test)
+        i = random_i.next() 
+
+        for root_file, evt_type in root_files(train=False, test=True):
             type_index = EVT_TYPES.index(evt_type)
             print root_file, evt_type, type_index
 
@@ -74,8 +87,8 @@ def data_writer(title):
                 if doms_hit_pass_threshold(evt.mc_hits, threshold=5, pass_k40=True): 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
-                    tots, bins = model.make_event(evt.hits, tbin_size=100)
-                    label = model.make_labels(type_index)
+                    tots, bins = make_event(evt.hits, tbin_size=tbin_size)
+                    label = make_labels(type_index)
                     
                     dset_l[i] = label 
                     dset_t[i] = tots 
@@ -101,9 +114,10 @@ def data_writer(title):
                         dir = trk.dir
                         dset_d[i] = [dir.x, dir.y, dir.z]
 
-                        #label = model.make_labels(trk.E, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z)
+                        #label = make_labels(trk.E, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z)
                     
-                    i += 1
+                    i = random_i.next() 
             
             ####################################################
-data_writer(PATH + 'data/hdf5_files/20000ns_100ns_all_events_labels_meta_%s.hdf5' % model.title)
+#data_writer(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta.hdf5', tbin_size=400, train=True, test=False)
+data_writer(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', tbin_size=400, train=False, test=True)

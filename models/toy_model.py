@@ -36,7 +36,7 @@ def fill_noise(event, num_mini_timeslices):
     return event
 
 
-def get_next_weird_xyz(x, y, z, label):
+def get_next_weird_xyz(x, y, z, klass):
     if klass == 0:
         z = z + 1
     elif klass == 1:
@@ -97,21 +97,22 @@ def get_next_line_xyz(x, y, z, klass):
         x += 1
     elif klass == 1:
         y += 1
-    elif klass == 2:
+    else:
        z += 1 
     if x == 13: x = 0
     if y == 13: y = 0
     return x, y, z
 
 
-def random_movement(n_label, num_mini_timeslices):
+def random_movement(n_lines, n_noise, num_mini_timeslices):
     event, klass, label = get_event_klass_label(num_mini_timeslices)
-    for _ in range(n_label):
-        j, x, y, z = get_start(label)
+    for _ in range(n_lines):
+        j, x, y, z = get_start(klass, num_mini_timeslices)
         for i in range(18):
             event[j + i, x, y, z, :] += .30
-            x, y, z = get_next_weird_xyz(x, y, z, label)
-    event = fill_noise(event)
+            x, y, z = get_next_weird_xyz(x, y, z, klass)
+    for _ in range(n_noise):
+        event = fill_noise(event, num_mini_timeslices)
 
     return event, label
 
@@ -151,7 +152,7 @@ def add_line_in_steps(n_lines, num_mini_timeslices):
 
 
 def make_toy(num_mini_timeslices):
-    return add_line_in_steps(30, num_mini_timeslices)
+#    return add_line_in_steps(10, num_mini_timeslices)
 #   return fill_matrix()     
 #   return all_line_in_steps()
-#   return random_moment()
+   return random_movement(25, 5, num_mini_timeslices)
