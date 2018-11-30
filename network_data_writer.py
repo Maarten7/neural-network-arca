@@ -34,40 +34,42 @@ EventFile.read_timeslices = True
 def data_writer(title, tbin_size, train, test):
     # these datatypes allow for variable length array to be saved into hdf5 format
     # this is needed since tots and bins differ per event
+
+    if train and test: num_events = NUM_EVENTS
+    elif train: num_events = NUM_TRAIN_EVENTS
+    elif test: num_events = NUM_TEST_EVENTS
+
     dtf = h5py.special_dtype(vlen=np.dtype('float64'))
     dti = h5py.special_dtype(vlen=np.dtype('int'))
 
     with h5py.File(title, "a") as hfile:
         # Data sets for data tots, bins, and label
-        shape = (NUM_EVENTS, )
+        shape = (num_events, )
         dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
-        #shape = (NUM_EVENTS, 4)
+        #shape = (num_events, 4)
         #dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
-        shape = (NUM_EVENTS, 5)
+        shape = (num_events, 5)
         dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
 
-        shape = (NUM_EVENTS, NUM_CLASSES)
+        shape = (num_events, NUM_CLASSES)
         dset_l = hfile.create_dataset("all_labels", dtype='int64', shape=shape)        
 
         # Data sets for meta data: Energy, n_hits, type, position and direction
-        shape = (NUM_EVENTS, )
+        shape = (num_events, )
         dset_E = hfile.create_dataset('all_energies', dtype='float64', shape=shape)
         dset_h = hfile.create_dataset('all_num_hits', dtype='int', shape=shape)
         dset_y = hfile.create_dataset('all_types', dtype='int', shape=shape)
         
-        shape = (NUM_EVENTS, 3)
+        shape = (num_events, 3)
         dset_p = hfile.create_dataset('all_positions', dtype='float64', shape=shape)
         dset_d = hfile.create_dataset('all_directions', dtype='float64', shape=shape)
 
         ####################################################    
-        if train and test: num_events = NUM_EVENTS
-        elif train: num_events = NUM_TRAIN_EVENTS
-        elif test: num_events = NUM_TEST_EVENTS
 
         random_i = random_index_gen(num_events, test)
         i = random_i.next() 
 
-        for root_file, evt_type in root_files(train=False, test=True):
+        for root_file, evt_type in root_files(train=train, test=test):
             type_index = EVT_TYPES.index(evt_type)
             print root_file, evt_type, type_index
 
@@ -119,5 +121,5 @@ def data_writer(title, tbin_size, train, test):
                     i = random_i.next() 
             
             ####################################################
-#data_writer(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta.hdf5', tbin_size=400, train=True, test=False)
-data_writer(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', tbin_size=400, train=False, test=True)
+data_writer(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta.hdf5',      tbin_size=250, train=True, test=False)
+data_writer(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta_test.hdf5', tbin_size=250, train=False, test=True)

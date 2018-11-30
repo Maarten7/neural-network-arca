@@ -43,7 +43,7 @@ def train_model(sess):
 
             # Train
             feed_dict = {model.x: events, model.y: labels, model.keep_prob: .8, model.learning_rate: 0.003 * .93 ** epoch} 
-            sess.run([model.train_op], feed_dict=feed_dict)
+            pred, _ = sess.run([model.prediction, model.train_op], feed_dict=feed_dict)
 
             if batch % 100 == 0:
 

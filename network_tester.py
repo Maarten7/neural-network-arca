@@ -13,6 +13,7 @@ import importlib
 import matplotlib.pyplot as plt
 from time import time
 from helper_functions import *
+from models.batch_handle import batches
 
 model = import_model()
 
@@ -31,7 +32,7 @@ def writer():
             dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_TEST_EVENTS, model.NUM_CLASSES), dtype='float')
             i = 0
             batch_size = 30 
-            for events, labels in model.batches(batch_size, test=True):
+            for events, labels in batches(batch_size, test=True):
 
                 ts = time()
 

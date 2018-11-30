@@ -18,7 +18,8 @@ def batches(batch_size, test=False, debug=False):
         indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_DEBUG_EVENTS, replace=False)
         num_events = NUM_DEBUG_EVENTS 
     elif test:
-        indices = range(NUM_TRAIN_EVENTS, NUM_EVENTS)
+        f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
+        indices = range(NUM_TEST_EVENTS)
         num_events = NUM_TEST_EVENTS
     else:
         indices = np.random.permutation(NUM_TRAIN_EVENTS)
