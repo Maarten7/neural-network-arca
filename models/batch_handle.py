@@ -4,18 +4,21 @@ import h5py
 from toy_model import make_toy
 from helper_functions import *
 import matplotlib.animation as animation
-num_mini_timeslices = 50 
+import matplotlib
+
+num_mini_timeslices = 80
 
 def batches(batch_size, test=False, debug=False):
     #f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
     #f = h5py.File(PATH + 'data/hdf5_files/20000ns_100ns_all_events_labels_meta_%s.hdf5' % title, 'r')
-    f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta.hdf5', 'r')
+    #f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta.hdf5', 'r')
+    f = h5py.File(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta.hdf5', 'r')
     if debug:
         indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_DEBUG_EVENTS, replace=False)
         num_events = NUM_DEBUG_EVENTS 
     elif test:
         f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
-        indices = range(NUM_TRAIN_EVENTS, NUM_EVENTS)
+        indices = range(NUM_TEST_EVENTS)
         num_events = NUM_TEST_EVENTS
     else:
         indices = np.random.permutation(NUM_TRAIN_EVENTS)
@@ -44,7 +47,8 @@ def batches(batch_size, test=False, debug=False):
         yield events, labels
 
 def get_validation_set(validation_set_size=600, batch_size=15):
-    f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
+    #f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
+    f = h5py.File(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta_test.hdf5', 'r')
     
     np.random.seed(0)
     for k in range(validation_set_size / batch_size):

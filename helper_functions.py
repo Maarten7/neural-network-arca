@@ -1,17 +1,9 @@
-import datetime
-import random
 from ROOT import * 
 import aa
 import numpy as np
 import sys
-import matplotlib
 import importlib
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from copy import copy
 
-
-matplotlib.rcParams.update({'font.size': 22})
 
 PATH = "/user/postm/neural-network-arca/"
 LOG_DIR = PATH + "log"
@@ -110,13 +102,21 @@ def num_events(threshold):
     tra = {typ: 0 for typ in EVT_TYPES}
     tes = {typ: 0 for typ in EVT_TYPES}
     EventFile.read_timeslices = True
-    for root_file, evt_type in root_files(test=True):
+        
+    for root_file, evt_type in root_files(train=True, test=True):
         print root_file        
         f = EventFile(root_file)
         f.use_tree_index_for_mc_reading = True
 
+        if threshold == 0:
+            if any(num in root_file for num in ['13', '14', '15']):
+                tes[evt_type] += len(f) 
+            else:
+                tra[evt_type] += len(f) 
+            continue
+
         for evt in f:
-            if doms_hit_pass_threshold(evt.mc_hits, threshold, pass_k40=False):
+            if doms_hit_pass_threshold(evt.mc_hits, threshold, pass_k40=True):
                 if any(num in root_file for num in ['13', '14', '15']):
                     tes[evt_type] += 1
                 else:
@@ -125,12 +125,27 @@ def num_events(threshold):
     print tes
     return tra, tes 
 
-
-test_data_file = PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5'
-
 DIR_TRAIN_EVENTS = {'anueNC': 17483, 'numuCC': 35222, 'nueCC': 28866, 'anumuCC': 36960, 'anueCC': 28990, 'nueNC': 19418, 'nuK40': 41172, 'anuK40': 41172}
 DIR_TEST_EVENTS  = {'anueNC': 4438,  'numuCC': 8593,  'nueCC': 7145,  'anumuCC': 9212,  'anueCC': 7124,  'nueNC': 4946, ' nuK40': 10293, 'anuK40': 10293}
+
+DIR_TRAIN_LABELS = {'shower': DIR_TRAIN_EVENTS['nueCC'] + DIR_TRAIN_EVENTS['anueCC'] + DIR_TRAIN_EVENTS['nueNC'] + DIR_TRAIN_EVENTS['anueNC'],
+                    'track':  DIR_TRAIN_EVENTS['numuCC'] + DIR_TRAIN_EVENTS['anumuCC'],
+                    'k40':    DIR_TRAIN_EVENTS['nuK40'] + DIR_TRAIN_EVENTS['anuK40']}
+
+DIR_TEST_LABELS = {'shower': DIR_TEST_EVENTS['nueCC'] + DIR_TEST_EVENTS['anueCC'] + DIR_TEST_EVENTS['nueNC'] + DIR_TEST_EVENTS['anueNC'],
+                    'track':  DIR_TEST_EVENTS['numuCC'] + DIR_TEST_EVENTS['anumuCC'],
+                    'k40':    DIR_TEST_EVENTS['nuK40'] + DIR_TEST_EVENTS['anuK40']}
+
 NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
 NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
 NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
 NUM_DEBUG_EVENTS = 3000
+
+print "\n#Train Events, #Test Events"
+print NUM_TRAIN_EVENTS
+print NUM_TEST_EVENTS
+print '\n'
+print "Classes"
+print DIR_TRAIN_LABELS
+print DIR_TEST_LABELS
+print '\n'
