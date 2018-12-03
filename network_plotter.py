@@ -37,7 +37,8 @@ def ranges():
     all14 = n14 + a14 
 
 # hdf5 files met (meta)data
-pred_file = h5py.File(PATH + 'data/results/temporal/20000ns_test_result_temporal.hdf5', 'r')
+#pred_file = h5py.File(PATH + 'data/results/temporal/20000ns_test_result_temporal.hdf5', 'r')
+pred_file = h5py.File(PATH + 'data/results/temporal_convLSTM/20000ns_test_result_temporal_convLSTM.hdf5', 'r')
 data_file = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
 
 # Network output
@@ -52,6 +53,8 @@ positions = data_file['all_positions'][:NUM_TEST_EVENTS]
 directions = data_file['all_directions'][:NUM_TEST_EVENTS]
 triggers = data_file['all_masks'].value
 
+        
+
 # ruimtelijke informatie van neutrino
 afstand = np.sqrt(np.sum(positions ** 2, axis=1))
 theta = np.arctan2(directions[:,2],np.sqrt(np.sum(directions[:,0:2]**2, axis=1)))
@@ -64,6 +67,16 @@ Rxy = np.sqrt(np.sum(positions[:,0:2] ** 2, axis=1))
 l_true = np.argmax(labels, axis=1)
 l_pred = np.argmax(predictions, axis=1)
 eq = l_true==l_pred
+
+with open('plotinfo.txt', 'w') as pfile:
+    for i in range(NUM_TEST_EVENTS):
+        p = l_pred[i]
+        l = l_true[i]
+        e = energies[i]
+        n = num_hits[i]
+        t = triggers[i]
+
+        pfile.write("%i,%i,%i,%f,%i\n" % (l, p, t, e, n))
 
 def plot_normelized_with_error(bins, tot_dis, par_dis, ax, label):
     error =  par_dis / tot_dis.astype(float) * np.sqrt( 1./ par_dis + 1./tot_dis)
@@ -235,16 +248,16 @@ def trigger_conf_matrix():
 #histogram_classified_as(theta, 'theta')
 #histogram_classified_as(phi, 'phi')
 
-#histogram_classified_as(np.log10(energies), 'log E')
-#histogram_classified_as(np.log10(num_hits), 'log N hits')
+histogram_classified_as(np.log10(energies), 'log E')
+histogram_classified_as(np.log10(num_hits), 'log N hits')
 
 #histogram_split_types(np.log10(energies), 'log E')
 #histogram_split_types(np.log10(num_hits), 'log N hits')
 
-#histogram_trigger(np.log10(energies), r'$\log_{10}(E_{\nu})$')
-#histogram_trigger(np.log10(num_hits), '$\log_{10}(#Hits)$')
+histogram_trigger(np.log10(energies), r'$\log_{10}(E_{\nu})$')
+histogram_trigger(np.log10(num_hits), '$\log_{10}(#Hits)$')
 
-#plot_confusion_matrix(l_pred)
+plot_confusion_matrix(l_pred)
 #plot_confusion_matrix(trigger_conf_matrix())
 
 #events_triggerd_as_K40()

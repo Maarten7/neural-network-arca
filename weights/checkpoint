@@ -1,2 +1,2 @@
-model_checkpoint_path: "/user/postm/neural-network-arca/weights/temporal_convLSTM.ckpt"
-all_model_checkpoint_paths: "/user/postm/neural-network-arca/weights/temporal_convLSTM.ckpt"
+model_checkpoint_path: "/user/postm/neural-network-arca/weights/temporal.ckpt"
+all_model_checkpoint_paths: "/user/postm/neural-network-arca/weights/temporal.ckpt"

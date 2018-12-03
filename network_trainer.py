@@ -46,6 +46,8 @@ def train_model(sess):
             pred, _ = sess.run([model.prediction, model.train_op], feed_dict=feed_dict)
 
             if batch % 100 == 0:
+                save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
+            if False:
 
                 t_cost, t_acc = 0, 0
                 for val_events, val_labels in get_validation_set():

@@ -9,7 +9,7 @@ from tf_help import conv3d, maxpool3d, weight, bias
 from helper_functions import EVT_TYPES, NUM_CLASSES, PATH, NUM_TRAIN_EVENTS
 
 title = 'temporal'
-num_mini_timeslices = 50
+num_mini_timeslices = 80
 
 #class event_and_label_gen:
 #    def __init__(self, title):

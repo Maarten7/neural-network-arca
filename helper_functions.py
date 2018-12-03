@@ -102,10 +102,18 @@ def num_events(threshold):
     tra = {typ: 0 for typ in EVT_TYPES}
     tes = {typ: 0 for typ in EVT_TYPES}
     EventFile.read_timeslices = True
-    for root_file, evt_type in root_files(train=False, test=True):
+        
+    for root_file, evt_type in root_files(train=True, test=True):
         print root_file        
         f = EventFile(root_file)
         f.use_tree_index_for_mc_reading = True
+
+        if threshold == 0:
+            if any(num in root_file for num in ['13', '14', '15']):
+                tes[evt_type] += len(f) 
+            else:
+                tra[evt_type] += len(f) 
+            continue
 
         for evt in f:
             if doms_hit_pass_threshold(evt.mc_hits, threshold, pass_k40=True):
@@ -113,8 +121,8 @@ def num_events(threshold):
                     tes[evt_type] += 1
                 else:
                     tra[evt_type] += 1
-        print tra
-        print tes
+    print tra
+    print tes
     return tra, tes 
 
 train_data_file = PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta.hdf5'
@@ -135,9 +143,10 @@ NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
 NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
 NUM_DEBUG_EVENTS = 3000
 
-print "#Train Events, #Test Events"
+print "\n#Train Events, #Test Events"
 print NUM_TRAIN_EVENTS
 print NUM_TEST_EVENTS
+print '\n'
 print "Classes"
 print DIR_TRAIN_LABELS
 print DIR_TEST_LABELS

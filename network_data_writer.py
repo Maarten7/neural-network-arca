@@ -81,7 +81,7 @@ def data_writer(title, tbin_size, train, test):
             for j, evt in enumerate(f):
                 # progress bar
                 if j % 250 == 0:
-                    print '\t', float(j) / num_events, '% done'
+                    print '%.2f %% done' % (float(j) / num_events)
 
                 # only events with more than 3 hits are saved since
                 # 4 hits is needed at least to reconstrucd.
@@ -121,5 +121,5 @@ def data_writer(title, tbin_size, train, test):
                     i = random_i.next() 
             
             ####################################################
-data_writer(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta.hdf5',      tbin_size=250, train=True, test=False)
+#data_writer(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta.hdf5',      tbin_size=250, train=True, test=False)
 data_writer(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta_test.hdf5', tbin_size=250, train=False, test=True)
