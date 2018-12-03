@@ -6,12 +6,8 @@
     Then it writes all the output to file. The output is the softmax threevector
     for each evetn"""
 import tensorflow as tf
-import numpy as np
 import h5py
-import sys
-import importlib
-import matplotlib.pyplot as plt
-from time import time
+
 from helper_functions import *
 from models.batch_handle import batches
 

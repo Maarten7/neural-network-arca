@@ -10,7 +10,7 @@ LOG_DIR = PATH + "log"
 
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
-num_mini_timeslices = 50
+num_mini_timeslices = 80
 
 def pmt_id_to_dom_id(pmt_id):
     #channel_id = (pmt_id - 1) % 31

@@ -4,10 +4,8 @@
 ###################################
 import tensorflow as tf
 import numpy as np
-import datetime
 import h5py
-import sys
-from time import time
+
 from helper_functions import * 
 from models.batch_handle import *
 

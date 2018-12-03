@@ -44,4 +44,4 @@ Cost funtion:   (softmax) Cross entropy
 Optimizer:      Adam optimizer with learning rate = 1e-5 - 1e-4
 
 #### Trouble shooting
-If you get a CUDA_ERROR on schol or schar ask Jan Just Keijser to reset it.
+If you get a CUDA_ERROR on schol or schar ask Jan Just Keijser or Roel Aaij to reset it.

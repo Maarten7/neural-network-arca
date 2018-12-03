@@ -30,15 +30,20 @@ def random_index_gen(num_events, test=False):
         for i in indices:
             yield i
 
+def get_num_events(train, test):
+    if train and test: num_events = NUM_EVENTS
+    elif train: num_events = NUM_TRAIN_EVENTS
+    elif test: num_events = NUM_TEST_EVENTS
+    return num_events
+    
+
 EventFile.read_timeslices = True
 def data_writer(title, tbin_size, train, test):
     # these datatypes allow for variable length array to be saved into hdf5 format
     # this is needed since tots and bins differ per event
-
-    if train and test: num_events = NUM_EVENTS
-    elif train: num_events = NUM_TRAIN_EVENTS
-    elif test: num_events = NUM_TEST_EVENTS
-
+    
+    num_events = get_num_events(train, test)
+    
     dtf = h5py.special_dtype(vlen=np.dtype('float64'))
     dti = h5py.special_dtype(vlen=np.dtype('int'))
 
