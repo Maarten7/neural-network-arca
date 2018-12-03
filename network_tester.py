@@ -13,6 +13,7 @@ import importlib
 import matplotlib.pyplot as plt
 from time import time
 from helper_functions import *
+from models.batch_handle import batches
 
 model = import_model()
 
@@ -31,17 +32,13 @@ def writer():
             dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_TEST_EVENTS, model.NUM_CLASSES), dtype='float')
             i = 0
             batch_size = 30 
-            for events, labels in model.batches(batch_size, test=True):
-
-                ts = time()
+            for events, labels in batches(batch_size, test=True):
 
                 feed_dict = {model.x: events, model.y: labels, model.keep_prob: 1.}
                 p = sess.run(model.prediction, feed_dict=feed_dict)
 
                 dset_pred[i: i + batch_size] = p
 
-                print i, NUM_TEST_EVENTS
                 i += batch_size
-                print '\tprediction', (time() - ts) / batch_size
 
 writer()

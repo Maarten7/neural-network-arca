@@ -18,23 +18,23 @@ dens = False
 
 # hdf5 files met (meta)data
 pred_file = h5py.File(PATH + 'data/results/%s/20000ns_test_result_%s.hdf5' % (model.title, model.title), 'r')
-data_file = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % model.title, 'r')
+data_file = h5py.File(test_data_file, 'r')
 
 trigger_file = h5py.File(PATH + 'data/hdf5_files/JTrigger_trigger.hdf5', 'r')
 
 # Network output
-predictions = pred_file['all_test_predictions'].value
+predictions = pred_file['all_test_predictions'][:NUM_TEST_EVENTS]
 pred_energy = predictions[:, 0]
 pred_direction = predictions[:,1:4]
 pred_positions = predictions[:,4:7]
 
 # alle informatie van alle events
-labels = data_file['all_labels'][NUM_TRAIN_EVENTS:NUM_TRAIN_EVENTS + NUM_TEST_EVENTS]
-energies = data_file['all_energies'][NUM_TRAIN_EVENTS:NUM_TRAIN_EVENTS + NUM_TEST_EVENTS]
-num_hits = data_file['all_num_hits'][NUM_TRAIN_EVENTS:NUM_TRAIN_EVENTS + NUM_TEST_EVENTS]
-types = data_file['all_types'][NUM_TRAIN_EVENTS:NUM_TRAIN_EVENTS + NUM_TEST_EVENTS]
-positions = data_file['all_positions'][NUM_TRAIN_EVENTS:NUM_TRAIN_EVENTS + NUM_TEST_EVENTS]
-directions = data_file['all_directions'][NUM_TRAIN_EVENTS:NUM_TRAIN_EVENTS + NUM_TEST_EVENTS]
+labels = data_file['all_labels'][:NUM_TEST_EVENTS]
+energies = data_file['all_energies'][:NUM_TEST_EVENTS]
+num_hits = data_file['all_num_hits'][:NUM_TEST_EVENTS]
+types = data_file['all_types'][:NUM_TEST_EVENTS]
+positions = data_file['all_positions'][:NUM_TEST_EVENTS]
+directions = data_file['all_directions'][:NUM_TEST_EVENTS]
 
 # JTRIGGER OUTPUT
 triggers = trigger_file['all_test_triggers'].value
@@ -58,6 +58,7 @@ def plot_normelized_with_error(bins, tot_dis, par_dis, ax, label):
 
 def plot_confusion_matrix():
     cm = confusion_matrix(l_true, l_pred)
+    print cm
     summ = np.sum(cm, axis=1, dtype=float)
     summ = np.column_stack((summ,summ,summ))
     cm = (cm / summ) * 100
@@ -176,6 +177,6 @@ def events_triggerd_as_K40():
 #histogram_trigger(np.log10(energies), 'log E')
 #histogram_trigger(np.log10(num_hits), 'log num hits')
 
-#plot_confusion_matrix()
+plot_confusion_matrix()
 
 #events_triggerd_as_K40()

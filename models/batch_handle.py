@@ -5,7 +5,6 @@ from toy_model import make_toy
 from helper_functions import *
 import matplotlib.animation as animation
 num_mini_timeslices = 50 
-title = 'temporal'
 
 def batches(batch_size, test=False, debug=False):
     #f = h5py.File(PATH + 'data/hdf5_files/20000ns_all_events_labels_meta_%s.hdf5' % title, 'r')
@@ -15,6 +14,7 @@ def batches(batch_size, test=False, debug=False):
         indices = np.random.choice(NUM_TRAIN_EVENTS, NUM_DEBUG_EVENTS, replace=False)
         num_events = NUM_DEBUG_EVENTS 
     elif test:
+        f = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
         indices = range(NUM_TRAIN_EVENTS, NUM_EVENTS)
         num_events = NUM_TEST_EVENTS
     else:
@@ -63,9 +63,6 @@ def get_validation_set(validation_set_size=600, batch_size=15):
 
         yield events, labels
 
-
-num_mini_timeslices = 200 
-
 def toy_batches(batch_size, debug=False):
     while True:
         events = np.zeros((batch_size, num_mini_timeslices, 13, 13, 18, 3))
@@ -83,7 +80,6 @@ def get_toy_validation_set(size=100):
     return events, labels
 
 def see_slices(j, movie=True):
-    f = h5py.File(PATH + 'data/hdf5_files/20000ns_100ns_all_events_labels_meta_%s.hdf5' % title, 'r')
     tots =  f['all_tots'][j]
     bins =  f['all_bins'][j]
     energy = f['all_energies'][j]

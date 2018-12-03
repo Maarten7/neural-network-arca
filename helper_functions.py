@@ -125,8 +125,11 @@ def num_events(threshold):
     print tes
     return tra, tes 
 
+
+test_data_file = PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5'
+
 DIR_TRAIN_EVENTS = {'anueNC': 17483, 'numuCC': 35222, 'nueCC': 28866, 'anumuCC': 36960, 'anueCC': 28990, 'nueNC': 19418, 'nuK40': 41172, 'anuK40': 41172}
-DIR_TEST_EVENTS = {'anueNC': 4438, 'numuCC': 8593, 'nueCC': 7145, 'anumuCC': 9212, 'anueCC': 7124, 'nueNC': 4946, 'nuK40': 41172, 'anuK40': 41172}
+DIR_TEST_EVENTS  = {'anueNC': 4438,  'numuCC': 8593,  'nueCC': 7145,  'anumuCC': 9212,  'anueCC': 7124,  'nueNC': 4946, ' nuK40': 10293, 'anuK40': 10293}
 NUM_TRAIN_EVENTS = sum(DIR_TRAIN_EVENTS.values())
 NUM_TEST_EVENTS = sum(DIR_TEST_EVENTS.values())
 NUM_EVENTS = NUM_TRAIN_EVENTS + NUM_TEST_EVENTS
