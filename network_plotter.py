@@ -12,9 +12,6 @@ dens = False
 save = False 
 "PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
 
-# hdf5 files met (meta)data
-pred_file = h5py.File(PATH + 'data/results/%s/20000ns_test_result_%s.hdf5' % (model.title, model.title), 'r')
-data_file = h5py.File(test_data_file, 'r')
 def ranges():
     ecn13 = range(0,     2424)
     eca13 = range(2424,  4752)
@@ -40,8 +37,8 @@ def ranges():
     all14 = n14 + a14 
 
 # hdf5 files met (meta)data
-#pred_file = h5py.File(PATH + 'data/results/temporal/20000ns_test_result_temporal.hdf5', 'r')
-pred_file = h5py.File(PATH + 'data/results/temporal_convLSTM/20000ns_test_result_temporal_convLSTM.hdf5', 'r')
+#pred_file = h5py.File(PATH + 'results/temporal/20000ns_test_result_temporal.hdf5', 'r')
+pred_file = h5py.File(PATH + 'results/temporal_convLSTM/20000ns_test_result_temporal_convLSTM.hdf5', 'r')
 data_file = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
 
 # Network output
@@ -190,7 +187,7 @@ def histogram_split_types(data, xlabel):
 # all triggered events
 def histogram_trigger(data_histogram, xlabel):
     fig, ax1 = plt.subplots(1,1)
-    he, be  = np.histogram(data_histogram[np.where(                  (l_true != 2) )], bins=30, density=dens)
+    he, be  = np.histogram(data_histogram[np.where(                  (l_true != 2) )], bins=60, density=dens)
     hen, _  = np.histogram(data_histogram[np.where( (l_pred != 2)  & (l_true != 2) )], bins=be, range=(be.min(), be.max()), density=dens)
     het, _  = np.histogram(data_histogram[np.where( (triggers != 0)& (l_true != 2) )], bins=be, range=(be.min(), be.max()), density=dens)
     plot_normelized_with_error(be, he, hen, ax1, label='KM3NNeT')
@@ -237,6 +234,28 @@ def trigger_conf_matrix():
                 trigger_pred[i] = 0 
     return trigger_pred
 
+def animate_event(event_full):
+    """Shows 3D plot of evt"""
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    event_full = np.sqrt(np.sum(np.square(event_full), axis=4))
+    ims = []
+    for i, event in enumerate(event_full):
+        x, y, z = event.nonzero()
+        k = event[event.nonzero()]
+        sc = ax.scatter(x, y, z, zdir='z', c=k, cmap=plt.get_cmap('Blues'), norm=matplotlib.colors.LogNorm(0.1, 350))
+        ims.append([sc])
+    ax.set_xlim([0,13])
+    ax.set_ylim([0,13])
+    ax.set_zlim([0,18])
+    ax.set_xlabel('x index')
+    ax.set_ylabel('y index')
+    ax.set_zlabel('z index')
+    plt.title('TTOT on DOM')
+    fig.colorbar(sc)
+    ani = animation.ArtistAnimation(fig, ims)
+    plt.show()
+
 #histogram_classified_as(np.log10(energies), 'log E', Rxy < 250)
 #histogram_classified_as(np.log10(energies), 'log E', ((250 < Rxy) & ( Rxy < 500)))
 #histogram_classified_as(np.log10(energies), 'log E', Rxy > 500)
@@ -249,17 +268,17 @@ def trigger_conf_matrix():
 #histogram_classified_as(theta, 'theta')
 #histogram_classified_as(phi, 'phi')
 
-histogram_classified_as(np.log10(energies), 'log E')
-histogram_classified_as(np.log10(num_hits), 'log N hits')
+#histogram_classified_as(np.log10(energies), 'log E')
+#histogram_classified_as(np.log10(num_hits), 'log N hits')
 
 #histogram_split_types(np.log10(energies), 'log E')
 #histogram_split_types(np.log10(num_hits), 'log N hits')
 
 histogram_trigger(np.log10(energies), r'$\log_{10}(E_{\nu})$')
-histogram_trigger(np.log10(num_hits), '$\log_{10}(#Hits)$')
+#histogram_trigger(np.log10(num_hits), '$\log_{10}(#Hits)$')
 
-plot_confusion_matrix(l_pred)
-#plot_confusion_matrix(trigger_conf_matrix())
+#plot_confusion_matrix(l_pred)
+plot_confusion_matrix(trigger_conf_matrix())
 
 #events_triggerd_as_K40()
 
@@ -274,3 +293,5 @@ plot_confusion_matrix(l_pred)
 #plt.plot(bins[:-1], h, label='k40', drawstyle='steps') 
 #plt.legend()
 #plt.show()
+
+

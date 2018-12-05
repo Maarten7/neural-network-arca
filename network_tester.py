@@ -9,7 +9,7 @@ import tensorflow as tf
 import h5py
 
 from helper_functions import *
-from models.batch_handle import batches
+from data.batch_handle import batches
 
 model = import_model()
 

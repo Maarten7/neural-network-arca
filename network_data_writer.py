@@ -15,11 +15,10 @@
 from ROOT import * 
 import aa
 import numpy as np
-import sys
 import h5py
-import importlib
+
 from helper_functions import *
-from models.detector_handle import make_event, make_labels
+from data.detector_handle import make_event, make_labels
 
 def random_index_gen(num_events, test=False):
     if test:
@@ -85,7 +84,7 @@ def data_writer(title, tbin_size, train, test):
             ####################################################    
             for j, evt in enumerate(f):
                 # progress bar
-                if j % 250 == 0:
+                if j % 500 == 0:
                     print '%.2f %% done' % (float(j) / num_events)
 
                 # only events with more than 3 hits are saved since

@@ -7,7 +7,7 @@ import numpy as np
 import h5py
 
 from helper_functions import * 
-from models.batch_handle import *
+from data.batch_handle import *
 
 # import neural network model and debug mode
 model, debug = import_model(only_model=False)
@@ -16,17 +16,6 @@ num_epochs = 1000 if not debug else 2
 begin_epoch = 0
 
 saver = tf.train.Saver()
-
-def save_output(cost, acc=0, epoch=0, batch=0):
-    """ writes accuracy and cost to file
-        input acc, accuracy value to write to file
-        input cost, cost value to write to file"""
-
-    print "Epoch %s\tcost: %f\tacc: %f\tbatch: %i" % (epoch, cost, acc, batch)
-
-    with open(PATH + 'data/results/%s/epoch_cost_acc.txt' % (model.title), 'a') as f:
-        f.write(str(epoch) + ',' + str(cost) + ',' + str(acc) + ',' + str(batch) + '\n')
-
 
 def train_model(sess):
     """ trains model,
@@ -44,8 +33,6 @@ def train_model(sess):
             pred, _ = sess.run([model.prediction, model.train_op], feed_dict=feed_dict)
 
             if batch % 100 == 0:
-                save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
-            if False:
 
                 t_cost, t_acc = 0, 0
                 for val_events, val_labels in get_validation_set():
@@ -58,7 +45,7 @@ def train_model(sess):
                     t_acc += acc
                 
                 # Save weights every x events
-                save_output(t_cost / 40, t_acc / 40, epoch, batch)
+                save_output(model.title, t_cost / 40, t_acc / 40, epoch, batch)
                 save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
 
         ########################################################################
