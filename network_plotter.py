@@ -7,7 +7,14 @@ from sklearn.metrics import confusion_matrix
 import itertools
 from helper_functions import *
 
-matplotlib.rcParams.update({'font.size': 22, 'pgf.rcfonts': False})
+matplotlib.rcParams.update({
+    'font.size': 16, 
+    'pgf.rcfonts': False,
+    'font.family': 'serif',
+    'figure.figsize': [8, 6],
+    'figure.autolayout': True,
+    })
+
 dens = False 
 save = False 
 "PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
@@ -66,15 +73,18 @@ l_true = np.argmax(labels, axis=1)
 l_pred = np.argmax(predictions, axis=1)
 eq = l_true==l_pred
 
-with open('plotinfo.txt', 'w') as pfile:
-    for i in range(NUM_TEST_EVENTS):
-        p = l_pred[i]
-        l = l_true[i]
-        e = energies[i]
-        n = num_hits[i]
-        t = triggers[i]
 
-        pfile.write("%i,%i,%i,%f,%i\n" % (l, p, t, e, n))
+def write_txt():
+    with open('plotinfo.txt', 'w') as pfile:
+        for i in range(NUM_TEST_EVENTS):
+            p = l_pred[i]
+            l = l_true[i]
+            e = energies[i]
+            n = num_hits[i]
+            t = triggers[i]
+
+            pfile.write("%i,%i,%i,%f,%i\n" % (l, p, t, e, n))
+write_txt()
 
 def plot_normelized_with_error(bins, tot_dis, par_dis, ax, label):
     error =  par_dis / tot_dis.astype(float) * np.sqrt( 1./ par_dis + 1./tot_dis)
@@ -187,20 +197,24 @@ def histogram_split_types(data, xlabel):
 # all triggered events
 def histogram_trigger(data_histogram, xlabel):
     fig, ax1 = plt.subplots(1,1)
-    he, be  = np.histogram(data_histogram[np.where(                  (l_true != 2) )], bins=60, density=dens)
-    hen, _  = np.histogram(data_histogram[np.where( (l_pred != 2)  & (l_true != 2) )], bins=be, range=(be.min(), be.max()), density=dens)
-    het, _  = np.histogram(data_histogram[np.where( (triggers != 0)& (l_true != 2) )], bins=be, range=(be.min(), be.max()), density=dens)
-    plot_normelized_with_error(be, he, hen, ax1, label='KM3NNeT')
-    plot_normelized_with_error(be, he, het, ax1, label='JTrigger')
-    ax1.set_ylim(0,1)
+    he, be  = np.histogram(np.log10(data_histogram[np.where(                  (l_true != 2) )]), bins=60, density=dens)
+    hen, _  = np.histogram(np.log10(data_histogram[np.where( (l_pred != 2)  & (l_true != 2) )]), bins=be, range=(be.min(), be.max()), density=dens)
+    het, _  = np.histogram(np.log10(data_histogram[np.where( (triggers != 0)& (l_true != 2) )]), bins=be, range=(be.min(), be.max()), density=dens)
+
+    plot_normelized_with_error(10 ** be, he, hen, ax1, label='KM3NNeT')
+    plot_normelized_with_error(10 ** be, he, het, ax1, label='JTrigger')
+
+    ax1.set_ylim(-0.01,1.01)
+    ax1.set_xscale('log')
     ax1.legend()
     ax1.set_title('Trigger Efficientcy')
     ax1.set_ylabel('Fraction of events triggered')
     ax1.set_xlabel(xlabel)
     if save:
-        fig.savefig('trigger_' + xlabel + '.pgf')
+        fig.savefig('trigger_' + xlabel + '.pdf')
     plt.show()
-    return 0
+
+    return he, hen, het, be
 
 def events_triggerd_as_K40():
     print 'K3NNET  ', 100 * np.sum((l_pred != 2) & (l_true == 2)) / float(np.sum( l_true == 2)) 
@@ -274,11 +288,11 @@ def animate_event(event_full):
 #histogram_split_types(np.log10(energies), 'log E')
 #histogram_split_types(np.log10(num_hits), 'log N hits')
 
-histogram_trigger(np.log10(energies), r'$\log_{10}(E_{\nu})$')
-#histogram_trigger(np.log10(num_hits), '$\log_{10}(#Hits)$')
+#histogram_trigger(energies, r'$E_{\nu}$')
+#he, hen, het, be = histogram_trigger(num_hits, '# MC Hits')
 
 #plot_confusion_matrix(l_pred)
-plot_confusion_matrix(trigger_conf_matrix())
+#plot_confusion_matrix(trigger_conf_matrix())
 
 #events_triggerd_as_K40()
 

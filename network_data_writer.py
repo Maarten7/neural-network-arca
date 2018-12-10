@@ -29,19 +29,12 @@ def random_index_gen(num_events, test=False):
         for i in indices:
             yield i
 
-def get_num_events(train, test):
-    if train and test: num_events = NUM_EVENTS
-    elif train: num_events = NUM_TRAIN_EVENTS
-    elif test: num_events = NUM_TEST_EVENTS
-    return num_events
-    
 
 EventFile.read_timeslices = True
-def data_writer(title, tbin_size, train, test):
+def data_writer(title, tbin_size, range):
     # these datatypes allow for variable length array to be saved into hdf5 format
     # this is needed since tots and bins differ per event
     
-    num_events = get_num_events(train, test)
     
     dtf = h5py.special_dtype(vlen=np.dtype('float64'))
     dti = h5py.special_dtype(vlen=np.dtype('int'))
@@ -70,10 +63,10 @@ def data_writer(title, tbin_size, train, test):
 
         ####################################################    
 
-        random_i = random_index_gen(num_events, test)
+        random_i = random_index_gen(num_events, True)
         i = random_i.next() 
 
-        for root_file, evt_type in root_files(train=train, test=test):
+        for root_file, evt_type in root_files(range=range):
             type_index = EVT_TYPES.index(evt_type)
             print root_file, evt_type, type_index
 
@@ -85,12 +78,12 @@ def data_writer(title, tbin_size, train, test):
             for j, evt in enumerate(f):
                 # progress bar
                 if j % 500 == 0:
-                    print '%.2f %% done' % (float(j) / num_events)
+                    print '\t%.2f %% done' % (float(j) / num_events)
 
                 # only events with more than 3 hits are saved since
                 # 4 hits is needed at least to reconstrucd.
                 num_hits = len(evt.mc_hits)
-                if doms_hit_pass_threshold(evt.mc_hits, threshold=5, pass_k40=True): 
+                if doms_hit_pass_threshold(evt.mc_hits, threshold=0, pass_k40=True): 
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
                     tots, bins = make_event(evt.hits, tbin_size=tbin_size)
@@ -126,4 +119,4 @@ def data_writer(title, tbin_size, train, test):
             
             ####################################################
 #data_writer(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta.hdf5',      tbin_size=250, train=True, test=False)
-data_writer(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta_test.hdf5', tbin_size=250, train=False, test=True)
+data_writer(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test_no_threshold.hdf5', tbin_size=400, range=range(13, 16))

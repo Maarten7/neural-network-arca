@@ -61,7 +61,7 @@ def hit_time_to_index(hit, tbin_size):
     else:           t_index = np.int(np.floor(t / tbin_size))
     return t_index
 
-def make_event(hits, norm_factor=100, tot_mode=True, tbin_size=50):
+def make_event(hits, norm_factor=100, tot_mode=True, tbin_size=NUM_MINI_TIMESLICES):
     "Take aa_net hits and put them in cube numpy arrays"
 
     event = np.zeros((20000 / tbin_size, 13, 13, 18, 3))
