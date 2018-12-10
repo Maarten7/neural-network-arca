@@ -10,7 +10,7 @@ PATH = "/user/postm/neural-network-arca/"
 
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
 NUM_CLASSES = 3
-NUM_MINI_TIMESLICES = 80
+NUM_MINI_TIMESLICES = 50
 
 def save_output(model_title, cost, acc=0, epoch=0, batch=0):
     """ writes accuracy and cost to file
