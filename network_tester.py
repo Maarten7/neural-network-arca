@@ -22,14 +22,16 @@ def writer():
     with tf.Session(config=config) as sess:
         saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
 
-        num_events = 81908 
         ##########################################################################
         print "Testing"
-        with h5py.File(PATH + 'data/results/%s/20000ns_test_result_%s_no_threshold.hdf5' % (model.title, model.title), 'w') as hfile:
+        with h5py.File(PATH + 'results/%s/20000ns_400ns_test_result_%s.hdf5' % (model.title, model.title), 'w') as hfile:
+
+            num_events = NUM_TEST_EVENTS
             dset_pred = hfile.create_dataset('all_test_predictions', shape=(num_events, model.NUM_CLASSES), dtype='float')
+
             i = 0
             batch_size = 30 
-            for events, labels in batches(batch_size, test=True):
+            for events, labels in batches(batch_size, file='20000ns_400ns_all_events_labels_meta_test'):
 
                 feed_dict = {model.x: events, model.y: labels, model.keep_prob: 1.}
                 p = sess.run(model.prediction, feed_dict=feed_dict)

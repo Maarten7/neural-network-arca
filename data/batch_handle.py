@@ -3,34 +3,35 @@ import h5py
 
 from helper_functions import *
 
-def get_file(test=False):
+def get_file(file):
     files = [
-            '20000ns_all_events_labels_meta_%s.hdf5',
-            '20000ns_100ns_all_events_labels_meta_%s.hdf5',
-            '20000ns_250ns_all_events_labels_meta.hdf5',
-            '20000ns_400ns_all_events_labels_meta.hdf5',
-            '20000ns_400ns_all_events_labels_meta_test.hdf5',
-            '20000ns_400ns_all_events_labels_meta_test_no_threshold.hdf5',
+            '20000ns_100ns_all_events_labels_meta',
+            '20000ns_250ns_all_events_labels_meta',
+            '20000ns_250ns_all_events_labels_meta_test',
+            '20000ns_400ns_all_events_labels_meta',
+            '20000ns_400ns_all_events_labels_meta_test',
+            '20000ns_400ns_all_events_labels_meta_test_no_threshold',
             ]
-    path = PATH + 'data/hdf5_files/'
-    if test: 
-        return h5py.File(path + files[4], 'r')
-    else:
-        return h5py.File(path + files[3], 'r')
+    assert file in files
+    path = PATH + 'data/hdf5_files/%s.hdf5'
+    return h5py.File(path % file, 'r')
 
-def get_num_indices(test=False):
-    if test:
-        indices = range(NUM_TEST_EVENTS)
+def get_num_events(file):
+    if 'test' in file:
         num_events = NUM_TEST_EVENTS
+        indices = range(num_events)
+    if 'no_threshold' in file:
+        num_events = NUM_TEST_EVENTS_NO_TRESHOLD
+        indices = range(num_events)
     else:
-        indices = np.random.permutation(NUM_TRAIN_EVENTS)
         num_events = NUM_TRAIN_EVENTS
-    return indices, num_event
+        indices = np.random.permutation(num_events)
+    return indices, num_events
 
-def batches(batch_size, test=False):
+def batches(batch_size, file):
 
-    f = get_file(test)
-    indices, num_events = get_num_events(test)
+    f = get_file(file)
+    indices, num_events = get_num_events(file)
 
     for k in range(0, num_events, batch_size):
         if k + batch_size > num_events:
@@ -81,6 +82,15 @@ def random_tots_bins(num_hits_threshold=0):
     while nh < num_hits_threshold:  
         i = np.random.randint(NUM_TRAIN_EVENTS)
         nh = f['all_num_hits'][i]
+    tots = f['all_tots'][i]
+    bins = f['all_bins'][i]
+    E    = f['all_energies'][i]
+    typ  = f['all_types'][i]
+    return tots, bins, E, nh, i, typ
+
+def index_tots_bins(i):
+    f = get_file() 
+    nh = f['all_num_hits'][i]
     tots = f['all_tots'][i]
     bins = f['all_bins'][i]
     E    = f['all_energies'][i]
