@@ -4,8 +4,6 @@ import numpy as np
 import sys
 import importlib
 
-from data.detector_handle import pmt_id_to_dom_id
-
 PATH = "/user/postm/neural-network-arca/"
 
 EVT_TYPES = ['nueCC', 'anueCC', 'nueNC', 'anueNC', 'numuCC', 'anumuCC', 'nuK40', 'anuK40']
@@ -21,6 +19,18 @@ def save_output(model_title, cost, acc=0, epoch=0, batch=0):
 
     with open(PATH + 'results/%s/epoch_cost_acc_%i.txt' % (model_title, NUM_MINI_TIMESLICES), 'a') as f:
         f.write(str(epoch) + ',' + str(cost) + ',' + str(acc) + ',' + str(batch) + '\n')
+
+def import_model(only_model=True):
+    """ imports a python module from command line. 
+        Also import debug mode default is False"""        
+    model = sys.argv[1].replace('/', '.')[:-3]
+    model = importlib.import_module(model)
+    if only_model: return model
+    try:
+        debug = eval(sys.argv[2])
+        return model, debug
+    except IndexError:
+        return model, False
 
 def random_event(k40=False):
     """ return a random evt object from data set"""
@@ -47,17 +57,6 @@ def random_event(k40=False):
     print f.index
     return f.evt
 
-def import_model(only_model=True):
-    """ imports a python module from command line. 
-        Also import debug mode default is False"""        
-    model = sys.argv[1].replace('/', '.')[:-3]
-    model = importlib.import_module(model)
-    if only_model: return model
-    try:
-        debug = eval(sys.argv[2])
-        return model, debug
-    except IndexError:
-        return model, False
 
 def make_file_str(evt_type, i, J='JEW'):
     """ returns a file str of evt_type root files"""
@@ -74,9 +73,15 @@ def root_files(range, J='JEW'):
             n = make_file_str(evt_type, i, J=J)
             yield n, evt_type
 
+def pmt_id_to_dom_id(pmt_id):
+    #channel_id = (pmt_id - 1) % 31
+    dom_id     = (pmt_id - 1) / 31 + 1
+    return dom_id
+
 def doms_hit_pass_threshold(mc_hits, threshold, pass_k40):
     """ checks if there a at least <<threshold>> doms
         hit by monte carlo hits. retuns true or false"""
+    if threshold == 0: return True
     if len(mc_hits) == 0: return pass_k40 
 
     dom_id_set = set()
@@ -94,7 +99,7 @@ def num_events(threshold):
     tes = {typ: 0 for typ in EVT_TYPES}
     EventFile.read_timeslices = True
         
-    for root_file, evt_type in root_files(train=True, test=True):
+    for root_file, evt_type in root_files(range(1, 16)):
         print root_file        
         f = EventFile(root_file)
         f.use_tree_index_for_mc_reading = True
@@ -115,6 +120,7 @@ def num_events(threshold):
     print tra
     print tes
     return tra, tes 
+
 
 DIR_TRAIN_EVENTS = {'anueNC': 17483, 'numuCC': 35222, 'nueCC': 28866, 'anumuCC': 36960, 'anueCC': 28990, 'nueNC': 19418, 'nuK40': 41172, 'anuK40': 41172}
 DIR_TEST_EVENTS  = {'anueNC': 4438,  'numuCC': 8593,  'nueCC': 7145,  'anumuCC': 9212,  'anueCC': 7124,  'nueNC': 4946,  'nuK40': 10293, 'anuK40': 10293}

@@ -10,6 +10,8 @@ import h5py
 from helper_functions import *
 from models.tf_help import weight, bias, conv3d, maxpool3d
 
+title = 'pipeline'
+
 train_data_file = PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta.hdf5'
 val_data_file   = PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta_val.hdf5'
 test_data_file  = PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta_test.hdf5'
@@ -116,7 +118,7 @@ optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=.7)
 train_op = optimizer.minimize(cost, global_step=global_step)
 
 # TESTING OR VALIDATING
-validation_data_set  = tf.data.Dataset.from_generator(event_label_val_gen,  (tf.float32, tf.int32)).batch(600)
+validation_data_set  = tf.data.Dataset.from_generator(event_label_val_gen, (tf.float32, tf.int32)).batch(600)
 vevent, vlabel = validation_data_set.make_one_shot_iterator().get_next()
 
 voutput = km3nnet(vevent)
@@ -128,16 +130,7 @@ accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 with tf.Session() as sess:
     sess.run(tf.gloabel_variables_initializer())
     
-    i = 0
     while True:
         loss, _  = sess.run([cost, train_op])
 
-        if i % 100:
-
-            while True:
-                loss, acc = sess.run([vcost, accuracy]) 
-                save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
-
-            save_output("pipeline", t_cost, t_acc)
-            
-        i += 1
+        save_path = saver.save(sess, PATH + "weights/%s.ckpt" % title)
