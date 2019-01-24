@@ -17,6 +17,9 @@ begin_epoch = 0
 
 saver = tf.train.Saver()
 
+train_file = 'all_400ns_with_ATM'
+validation_file = 'all_400ns_with_ATM_validation'
+
 def train_model(sess):
     """ trains model,
         input sess, a tensorflow session."""
@@ -25,18 +28,17 @@ def train_model(sess):
     for epoch in range(begin_epoch, num_epochs):
 
         #######################################################################
-        np.random.seed()
-        for batch, (events, labels) in enumerate(batches(batch_size=batch_size, debug=debug)):
+        for batch, (events, labels) in enumerate(batches(train_file, batch_size)):
 
             # Train
             feed_dict = {model.x: events, model.y: labels, model.keep_prob: .8, model.learning_rate: 0.003 * .93 ** epoch} 
             pred, _ = sess.run([model.prediction, model.train_op], feed_dict=feed_dict)
 
             if batch % 100 == 0:
-
+                
+                #### Validation
                 t_cost, t_acc = 0, 0
-                for val_events, val_labels in get_validation_set():
-
+                for val_events, val_labels in batches(validation_file, batch_size):
                     
                     feed_dict = {model.x: val_events, model.y: val_labels, model.keep_prob: 1}
                     acc, cost = sess.run([model.accuracy, model.cost], feed_dict=feed_dict)
@@ -45,7 +47,9 @@ def train_model(sess):
                     t_acc += acc
                 
                 # Save weights every x events
-                save_output(model.title, t_cost / 40, t_acc / 40, epoch, batch)
+                z = NUM_VAL_EVENTS / batch_size
+                save_output(model.title, t_cost / z , t_acc / z, epoch, batch)
+
                 save_path = saver.save(sess, PATH + "weights/%s.ckpt" % model.title)
 
         ########################################################################

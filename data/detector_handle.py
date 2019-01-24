@@ -86,8 +86,10 @@ def make_event(hits, norm_factor=100, tot_mode=True, tbin_size=NUM_MINI_TIMESLIC
 def make_labels(code):
     """ Makes one hot labels form evt_type code"""
     if code < 4:
-        return np.array([1, 0, 0])
+        return np.array([1, 0, 0, 0])
     elif code < 6:
-        return np.array([0, 1, 0])
+        return np.array([0, 1, 0, 0])
+    elif code < 8:
+        return np.array([0, 0, 1, 0])
     else:
-        return np.array([0, 0, 1])
+        return np.array([0, 0, 0, 1])

@@ -13,31 +13,35 @@ from data.batch_handle import batches
 
 model = import_model()
 
+test_file = 'all_400ns_with_ATM_test'
 # Tensorboard and saving variables
 saver = tf.train.Saver()
 
 # Session
-def writer():
+def writer(out_file):
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
     with tf.Session(config=config) as sess:
         saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
 
         ##########################################################################
         print "Testing"
-        with h5py.File(PATH + 'results/%s/20000ns_400ns_test_result_%s.hdf5' % (model.title, model.title), 'w') as hfile:
+        hfile = h5py.File(PATH + 'results/%s/%s.hdf5' % (model.title, out_file), 'w')
 
-            num_events = NUM_TEST_EVENTS
-            dset_pred = hfile.create_dataset('all_test_predictions', shape=(num_events, model.NUM_CLASSES), dtype='float')
+        num_events = NUM_TEST_EVENTS
+        dset_pred = hfile.create_dataset('all_test_predictions', shape=(num_events, model.NUM_CLASSES), dtype='float')
 
-            i = 0
-            batch_size = 30 
-            for events, labels in batches(batch_size, file='20000ns_400ns_all_events_labels_meta_test'):
+        i = 0
+        batch_size = 30 
+        for events, labels in batches(test_file, batch_size):
+            print i
 
-                feed_dict = {model.x: events, model.y: labels, model.keep_prob: 1.}
-                p = sess.run(model.prediction, feed_dict=feed_dict)
+            feed_dict = {model.x: events, model.y: labels, model.keep_prob: 1.}
+            p = sess.run(model.prediction, feed_dict=feed_dict)
 
-                dset_pred[i: i + batch_size] = p
+            dset_pred[i: i + batch_size] = p
 
-                i += batch_size
+            i += batch_size
 
-writer()
+        hfile.close()
+
+writer('all_400ns_with_ATM_test_result')

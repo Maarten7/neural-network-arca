@@ -19,8 +19,10 @@ import h5py
 
 from helper_functions import *
 from data.detector_handle import make_event, make_labels
+from data.batch_handle import random_tots_bins
 
-def random_index_gen(num_events, test=False):
+
+def random_index_gen(num_events, test):
     if test:
         for i in range(num_events):
             yield i
@@ -29,22 +31,30 @@ def random_index_gen(num_events, test=False):
         for i in indices:
             yield i
 
+def get_num_events(test=False):
+    if test:
+        return NUM_TEST_EVENTS
+    else:
+        return NUM_TRAIN_EVENTS
+
 
 EventFile.read_timeslices = True
-def data_writer(title, tbin_size, range):
+def data_writer(file, tbin_size):
     # these datatypes allow for variable length array to be saved into hdf5 format
     # this is needed since tots and bins differ per event
-    
+    test = 'test' in file 
+    num_events = get_num_events(test) 
+    if test: root_files_gen = root_files_test
+    if not test: root_files_gen = root_files_train
     
     dtf = h5py.special_dtype(vlen=np.dtype('float64'))
     dti = h5py.special_dtype(vlen=np.dtype('int'))
 
-    with h5py.File(title, "a") as hfile:
+    with h5py.File(file, "a") as hfile:
         # Data sets for data tots, bins, and label
         shape = (num_events, )
         dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
-        #shape = (num_events, 4)
-        #dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
+
         shape = (num_events, 5)
         dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
 
@@ -56,17 +66,13 @@ def data_writer(title, tbin_size, range):
         dset_E = hfile.create_dataset('all_energies', dtype='float64', shape=shape)
         dset_h = hfile.create_dataset('all_num_hits', dtype='int', shape=shape)
         dset_y = hfile.create_dataset('all_types', dtype='int', shape=shape)
-        
-        shape = (num_events, 3)
-        dset_p = hfile.create_dataset('all_positions', dtype='float64', shape=shape)
-        dset_d = hfile.create_dataset('all_directions', dtype='float64', shape=shape)
 
         ####################################################    
 
-        random_i = random_index_gen(num_events, True)
+        random_i = random_index_gen(num_events, test)
         i = random_i.next() 
 
-        for root_file, evt_type in root_files(range=range):
+        for root_file, evt_type in root_files_gen():
             type_index = EVT_TYPES.index(evt_type)
             print root_file, evt_type, type_index
 
@@ -83,7 +89,8 @@ def data_writer(title, tbin_size, range):
                 # only events with more than 3 hits are saved since
                 # 4 hits is needed at least to reconstrucd.
                 num_hits = len(evt.mc_hits)
-                if doms_hit_pass_threshold(evt.mc_hits, threshold=0, pass_k40=True): 
+                #if doms_hit_pass_threshold(evt.mc_hits, threshold=0, pass_k40=True): 
+                if good_event(evt, evt_type):
                     # root hits transformed into numpy arrays. labels is made from 
                     # event type
                     tots, bins = make_event(evt.hits, tbin_size=tbin_size)
@@ -97,26 +104,81 @@ def data_writer(title, tbin_size, range):
 
                     # K40 have no energy, nhits, posistion and directions.
                     # all are set to zero
-                    if num_hits == 0:
+                    if evt_type in ['anuK40', 'nuK40', 'nuATM']:
                         dset_E[i] = 0
-                        dset_p[i] = [0, 0, 0]
-                        dset_d[i] = [0, 0, 0] 
 
                     # Meta data set for neurtrino events
                     else:    
                         trk = evt.mc_trks[0]
                         dset_E[i] = trk.E
                         dset_h[i] = num_hits
-
-                        pos = trk.pos
-                        dset_p[i] = [pos.x, pos.y, pos.z]
-                        dir = trk.dir
-                        dset_d[i] = [dir.x, dir.y, dir.z]
-
-                        #label = make_labels(trk.E, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z)
                     
-                    i = random_i.next() 
+                    try:
+                        i = random_i.next() 
+                    except StopIteration:
+                        pass
+                        
             
             ####################################################
-#data_writer(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta.hdf5',      tbin_size=250, train=True, test=False)
-data_writer(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test_no_threshold.hdf5', tbin_size=400, range=range(13, 16))
+def validation_file(file, test_file, num_events=NUM_VAL_EVENTS):
+    # these datatypes allow for variable length array to be saved into hdf5 format
+    # this is needed since tots and bins differ per event
+    
+    random_indices = np.random.choice(range(NUM_TEST_EVENTS), num_events, replace=False)
+    
+    test_file = h5py.File(test_file, 'r')
+    
+    dtf = h5py.special_dtype(vlen=np.dtype('float64'))
+    dti = h5py.special_dtype(vlen=np.dtype('int'))
+    with h5py.File(file, "a") as hfile:
+        # Data sets for data tots, bins, and label
+
+        shape = (num_events, )
+        dset_t = hfile.create_dataset('all_tots', dtype=dtf, shape=shape)
+
+        shape = (num_events, 5)
+        dset_b = hfile.create_dataset('all_bins', dtype=dti, shape=shape)
+
+        shape = (num_events, NUM_CLASSES)
+        dset_l = hfile.create_dataset("all_labels", dtype='int64', shape=shape)        
+
+        for i, ri in enumerate(random_indices):
+            dset_l[i] = test_file['all_labels'][ri]
+            dset_b[i] = np.vstack(test_file['all_bins'][ri])
+            dset_t[i] = test_file['all_tots'][ri]
+
+
+    test_file.close()
+
+def add_num_muons(file, range):
+    with h5py.File(file, 'a') as hfile:
+        num_events = NUM_TEST_EVENTS
+
+        dset_m = hfile.create_dataset('all_num_muons', dtype=int, shape=(num_events,))
+        #dset_m = hfile['all_num_muons'] 
+        random_i = random_index_gen(num_events, test='test' in file)
+        i = random_i.next() 
+        for root_file, evt_type in root_files(range=range):
+            type_index = EVT_TYPES.index(evt_type)
+            print root_file, evt_type, type_index
+
+            f = EventFile(root_file)
+            f.use_tree_index_for_mc_reading = True
+            num_events = len(f)
+
+            for evt in f:
+                if good_event(evt, evt_type):
+                    if evt_type == 'nuATM':
+                        dset_m[i] = len(evt.mc_trks) - 1
+                    
+                    try:
+                        i = random_i.next() 
+                    except StopIteration:
+                        pass
+
+
+data_writer(file='data/hdf5_files/400ns_ATM_BIG.hdf5', tbin_size=400)
+#data_writer(file='data/hdf5_files/400ns_ATM_test.hdf5', tbin_size=400, range=range(13, 16))
+#validation_file(file='data/hdf5_files/all_400ns_with_ATM_validation.hdf5', test_file='data/hdf5_files/all_400ns_with_ATM_test.hdf5')
+
+#add_num_muons('data/hdf5_files/all_400ns_with_ATM_test.hdf5', range(13, 16))

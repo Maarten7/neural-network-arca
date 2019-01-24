@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 fh = open('epoch_cost_acc_80.txt')
 #fh = open('epoch_cost_acc.txt')
 
@@ -13,8 +14,8 @@ for line in fh:
     costs.append(float(cost))
     accs.append(float(acc))
 
-print "minimal cost", min(costs)
-print "maximal acc", max(accs) 
+print "minimal cost", min(costs), np.argmin(costs)
+print "maximal acc", max(accs), np.argmax(accs)
 plt.plot(costs)
 plt.xlabel("training step")
 plt.ylabel("Cross entropy cost per event")
