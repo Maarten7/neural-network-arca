@@ -1,4 +1,3 @@
-import h5py 
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -7,51 +6,50 @@ from sklearn.metrics import confusion_matrix
 import itertools
 from helper_functions import *
 
-matplotlib.rcParams.update({'font.size': 22, 'pgf.rcfonts': False})
+matplotlib.rcParams.update({
+    'font.size': 16, 
+    'font.family': 'serif',
+    'pgf.rcfonts': True,
+    'pgf.texsystem': "pdflatex",
+    'figure.figsize': [10, 5], 
+    'figure.autolayout': True,
+    })
+
 dens = False 
-save = False 
+save = True
 "PLOTS energy and num_hits distribution of classified events. The energy and n hits distrubution is normalized"
 
-def ranges():
-    ecn13 = range(0,     2424)
-    eca13 = range(2424,  4752)
-    enn13 = range(4752,  6397)
-    ena13 = range(6397,  7885)
-    mcn13 = range(7885,  10721)
-    mca13 = range(10721, 13701)
-
-    n13 = ecn13 + enn13 + mcn13
-    a13 = eca13 + ena13 + mca13
-    all13 = n13 + a13 
-
-    k = 2 * 3431
-    ecn14 = range(k + 13701, k + 16064)
-    eca14 = range(k + 16064, k + 18490)
-    enn14 = range(k + 18490, k + 20149)
-    ena14 = range(k + 20149, k + 21606)
-    mcn14 = range(k + 21606, k + 24480)  
-    mca14 = range(k + 24480, k + 27548)  
-
-    n14 = ecn14 + enn14 + mcn14
-    a14 = eca14 + ena14 + mca14
-    all14 = n14 + a14 
-
-# hdf5 files met (meta)data
-pred_file = h5py.File(PATH + 'data/results/temporal/20000ns_test_result_temporal.hdf5', 'r')
-data_file = h5py.File(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta_test.hdf5', 'r')
 
 # Network output
-predictions = pred_file['all_test_predictions'][:NUM_TEST_EVENTS]
+l_true = []
+l_pred = []
+energies = []
+num_hits = []
+triggers = []
 
-# alle informatie van alle events
-labels = data_file['all_labels'][:NUM_TEST_EVENTS]
-energies = data_file['all_energies'][:NUM_TEST_EVENTS]
-num_hits = data_file['all_num_hits'][:NUM_TEST_EVENTS]
-types = data_file['all_types'][:NUM_TEST_EVENTS]
-positions = data_file['all_positions'][:NUM_TEST_EVENTS]
-directions = data_file['all_directions'][:NUM_TEST_EVENTS]
-triggers = data_file['all_masks'].value
+with open('plotinfo.txt', 'r') as pfile:
+    for line in pfile:
+        l, p, t, e, n = line.split(',')
+        l_true.append(int(l))
+        l_pred.append(int(p))
+        triggers.append(int(t))
+        energies.append(float(e))
+        num_hits.append(int(n))
 
+positions = np.zeros((len(l_true), 3))
+directions = np.zeros((len(l_true), 3))
+with open('posdir.txt', 'r') as pfile:
+    for i, line in enumerate(pfile):
+        x, y, z, dx, dy, dz = line.split(',')
+        positions[i] = np.array([float(x), float(y), float(z)])
+        directions[i] = np.array([float(dx), float(dy), float(dz)])
+
+l_true = np.array(l_true)
+l_pred = np.array(l_pred)
+triggers = np.array(triggers)
+energies = np.array(energies)
+num_hits = np.array(num_hits)
+    
 # ruimtelijke informatie van neutrino
 afstand = np.sqrt(np.sum(positions ** 2, axis=1))
 theta = np.arctan2(directions[:,2],np.sqrt(np.sum(directions[:,0:2]**2, axis=1)))
@@ -59,51 +57,37 @@ phi = np.arctan2(directions[:,1], directions[:,0])
 inward = np.sum(positions * directions, axis=1) < 0
 outward = np.sum(positions * directions, axis=1) > 0
 Rxy = np.sqrt(np.sum(positions[:,0:2] ** 2, axis=1))
-
-# Predictions in to classes
-l_true = np.argmax(labels, axis=1)
-l_pred = np.argmax(predictions, axis=1)
-eq = l_true==l_pred
-
-def plot_normelized_with_error(bins, tot_dis, par_dis, ax, label):
-    error =  par_dis / tot_dis.astype(float) * np.sqrt( 1./ par_dis + 1./tot_dis)
-    #ax.errorbar(bins[:-1], par_dis / tot_dis.astype(float), label=label, fmt='.', yerr=error) 
-    ax.plot(bins[:-1], par_dis / tot_dis.astype(float), label=label, drawstyle='steps') 
-    ax.fill_between(bins[:-1], par_dis / tot_dis.astype(float) - error, par_dis / tot_dis.astype(float) + error, alpha=0.1, step='pre') 
-    return 0
+x = positions[:, 0]
+y = positions[:, 1]
+z = positions[:, 2]
 
 
-def energie_distribution():
-    fig, (ax1, ax2) = plt.subplots(1,2)
-    nbins = 60 
+def plot_normelized_with_error(bins, total, partial, ax, label):
+    tot = total.astype(float)
+    par = partial.astype(float)
+    fin = par / tot 
 
-    he, bins = np.histogram(np.log10(energies[no_k40s]), bins=nbins, density=dens)
-    ax2.plot(bins[:-1], he, label='5 hits on 5 doms', drawstyle='steps') 
+    error =  par / tot * np.sqrt(1/ par - 1/tot)
 
-    he, bins = np.histogram(np.log10(energies[np.where( l_pred != 2 )]), bins=nbins, density=dens)
-    ax2.plot(bins[:-1], he, label='NN', drawstyle='steps') 
-
-    he, bins = np.histogram(np.log10(energies[np.where( triggers != 0)]), bins=nbins, density=dens)
-    ax2.plot(bins[:-1], he, label='JTrigger', drawstyle='steps') 
-
-    ax1.set_xlabel("log E")
-    ax1.set_ylabel("number of events")
-    ax2.set_xlabel("log E")
-    ax1.legend()
-    ax2.legend()
-    plt.title("energie distribution")
-    plt.show()
+    ax.plot(bins[:-1], fin, label=label, drawstyle='steps') 
+    ax.fill_between(bins[:-1], fin - error, fin + error, alpha=0.3, step='pre') 
     return 0
 
 def plot_confusion_matrix(pred):
+    fig, ax = plt.subplots(1)
     cm = confusion_matrix(l_true, pred)
+    
+    print cm 
+
     summ = np.sum(cm, axis=1, dtype=float)
     summ = np.column_stack((summ,summ,summ))
-    cm = (cm / summ) * 100
-    err_cm = cm * np.sqrt( 1. / cm + 1. / summ) 
 
-    plt.imshow(cm, cmap=plt.cm.Blues)
-    plt.title('Normalized confusion matrix')
+    err_cm = np.nan_to_num(100 * cm / summ * np.sqrt( 1./ cm - 1. / summ))
+    cm = 100 * cm / summ
+    
+
+    ax.imshow(cm, cmap=plt.cm.Blues)
+    ax.set_title('Normalized confusion matrix')
     #plt.colorbar()
     tick_marks = np.arange(3)
 
@@ -111,89 +95,181 @@ def plot_confusion_matrix(pred):
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
 
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+    ax.set_ylabel('True label')
+    ax.set_xlabel('Predicted label')
     for i,j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, "{0:.1f} $\pm$ {1:.1f} %".format(cm[i,j], err_cm[i,j]), horizontalalignment='center', color='red')
 
+    if save:
+        fig.savefig("confusionmatrix.pgf")
     plt.show()
     return 0
 
-def histogram_classified_as(data_histogram, xlabel, split=True):
+split1 = (Rxy < 500) & (z < 400) & (z > -400)
+split2 = (Rxy > 500) & (z > 400) & (z < -400)
+def detector_regions():
     fig, (ax1, ax2) = plt.subplots(1,2)
-    #### shower
-    he, be  = np.histogram(data_histogram[np.where( (l_true == 0)                 )], bins=30, density=dens)
-    hee, _  = np.histogram(data_histogram[np.where( (l_true == 0) & (l_pred == 0) )], bins=be, range=(be.min(), be.max()), density=dens)
-    hem, _  = np.histogram(data_histogram[np.where( (l_true == 0) & (l_pred == 1) )], bins=be, range=(be.min(), be.max()), density=dens)
-    hek, _  = np.histogram(data_histogram[np.where( (l_true == 0) & (l_pred == 2) )], bins=be, range=(be.min(), be.max()), density=dens)
+    data = energies
+    bins = 60
+    ax = ax1
+    split1 = (Rxy < 500) & (z < 400) & (z > -400)
+    split2 = (Rxy > 500) & (z > 400) & (z < -400)
+    label1 = 'in box' 
+    label2 = 'out box' 
+    he, be  = np.histogram(np.log10(data[np.where( (l_true == 0))]), bins=bins, density=dens)
 
-    plot_normelized_with_error(be, he, hee, ax1, label='as shower')
-    plot_normelized_with_error(be, he, hem, ax1, label='as track')
-    plot_normelized_with_error(be, he, hek, ax1, label='as K40')
+    hee, _  = np.histogram(np.log10(data[np.where( (l_true == 0) & (l_pred == 0) & split1)]), bins=be, range=(be.min(), be.max()), density=dens)
+    plot_normelized_with_error(10 ** be, he, hee, ax, label=label1)
+
+    hee, _  = np.histogram(np.log10(data[np.where( (l_true == 0) & (l_pred == 0) & split2)]), bins=be, range=(be.min(), be.max()), density=dens)
+    plot_normelized_with_error(10 ** be, he, hee, ax, label=label2)
+
+    ax.set_ylim(0,1)
+    ax.legend()
+    ax.set_title('Classification of shower events')
+    ax.set_ylabel('Fraction events classified as')
+    ax.set_xscale('log')
+
+    ax = ax2
+    he, be  = np.histogram(np.log10(data[np.where( (l_true == 1))]), bins=bins, density=dens)
+
+    hee, _  = np.histogram(np.log10(data[np.where( (l_true == 1) & (l_pred == 1) & split1)]), bins=be, range=(be.min(), be.max()), density=dens)
+    plot_normelized_with_error(10 ** be, he, hee, ax, label=label1)
+
+    hee, _  = np.histogram(np.log10(data[np.where( (l_true == 1) & (l_pred == 1) & split2)]), bins=be, range=(be.min(), be.max()), density=dens)
+    plot_normelized_with_error(10 ** be, he, hee, ax, label=label2)
+
+    ax.set_ylim(0,1)
+    ax.legend()
+    ax.set_title('Classification of track events')
+    ax.set_ylabel('Fraction events classified as')
+    ax.set_xscale('log')
+
+    plt.show()  
+
+
+def histogram_classified_as(split=True):
+    fig, (ax1, ax2) = plt.subplots(1,2)
+
+    #### shower
+    data_histogram = energies
+    he, be  = np.histogram(np.log10(data_histogram[np.where( (l_true == 0)                 )]), bins=30, density=dens)
+    hee, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 0) & (l_pred == 0) )]), bins=be, range=(be.min(), be.max()), density=dens)
+    hem, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 0) & (l_pred == 1) )]), bins=be, range=(be.min(), be.max()), density=dens)
+    hek, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 0) & (l_pred == 2) )]), bins=be, range=(be.min(), be.max()), density=dens)
+
+    plot_normelized_with_error(10 ** be, he, hee, ax1, label='Shower')
+    plot_normelized_with_error(10 ** be, he, hem, ax1, label='Track')
+    plot_normelized_with_error(10 ** be, he, hek, ax1, label='K40')
     ax1.set_ylim(0,1)
     ax1.legend()
-    ax1.set_title('Classification shower')
-    ax1.set_ylabel('Fraction of shower events classified as')
-    ax1.set_xlabel(xlabel)
-    #### track
-    he, be  = np.histogram(data_histogram[np.where( (l_true == 1)                 & split)], bins=30, density=dens)
-    hee, _  = np.histogram(data_histogram[np.where( (l_true == 1) & (l_pred == 0) & split)], bins=be, range=(be.min(), be.max()), density=dens)
-    hem, _  = np.histogram(data_histogram[np.where( (l_true == 1) & (l_pred == 1) & split)], bins=be, range=(be.min(), be.max()), density=dens)
-    hek, _  = np.histogram(data_histogram[np.where( (l_true == 1) & (l_pred == 2) & split)], bins=be, range=(be.min(), be.max()), density=dens)
+    #ax1.set_title('Classification of shower events')
+    ax1.set_ylabel('Fraction events classified as')
+    ax1.set_xlabel('E [GeV]')
+    ax1.set_xscale('log')
 
-    plot_normelized_with_error(be, he, hee, ax2, label='as shower')
-    plot_normelized_with_error(be, he, hem, ax2, label='as track')
-    plot_normelized_with_error(be, he, hek, ax2, label='as K40')
+    #### shower
+    data_histogram = num_hits 
+    he, be  = np.histogram(np.log10(data_histogram[np.where( (l_true == 0)                 )]), bins=30, density=dens)
+    hee, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 0) & (l_pred == 0) )]), bins=be, range=(be.min(), be.max()), density=dens)
+    hem, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 0) & (l_pred == 1) )]), bins=be, range=(be.min(), be.max()), density=dens)
+    hek, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 0) & (l_pred == 2) )]), bins=be, range=(be.min(), be.max()), density=dens)
+
+    plot_normelized_with_error(10 ** be, he, hee, ax2, label='Shower')
+    plot_normelized_with_error(10 ** be, he, hem, ax2, label='Track')
+    plot_normelized_with_error(10 ** be, he, hek, ax2, label='K40')
     ax2.set_ylim(0,1)
     ax2.legend()
-    ax2.set_title('Classification track')
-    ax2.set_ylabel('Fraction of track events classified as')
-    ax2.set_xlabel(xlabel)
-    fig.set_size_inches(11.69, 8.27, forward=False)
-    #fig.savefig('histogram_as_' + xlabel + '.pdf', dpi=500)
+    #ax2.set_title('Classification of shower events')
+    #ax2.set_ylabel('Fraction events classified as')
+    ax2.set_xlabel('Monte Carlo hits')
+    ax2.set_xscale('log')
+
+    ax1.set_ylim(-0.01,1.01)
+    ax2.set_ylim(-0.01,1.01)
+    ax2.set_yticklabels([])
+    fig.suptitle('Classification of shower events', va='top')
+    if save:
+        fig.savefig('histogram_as_shower' + '.pgf')
+    plt.show()
+
+    fig, [ax3, ax4] = plt.subplots(1,2)
+    #### track
+    data_histogram = energies
+    he, be  = np.histogram(np.log10(data_histogram[np.where( (l_true == 1)                 & split)]), bins=30, density=dens)
+    hee, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 1) & (l_pred == 0) & split)]), bins=be, range=(be.min(), be.max()), density=dens)
+    hem, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 1) & (l_pred == 1) & split)]), bins=be, range=(be.min(), be.max()), density=dens)
+    hek, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 1) & (l_pred == 2) & split)]), bins=be, range=(be.min(), be.max()), density=dens)
+
+    plot_normelized_with_error(10 ** be, he, hee, ax3, label='Shower')
+    plot_normelized_with_error(10 ** be, he, hem, ax3, label='Track')
+    plot_normelized_with_error(10 ** be, he, hek, ax3, label='K40')
+    ax3.set_ylim(0,1)
+    ax3.set_xscale('log')
+    ax3.legend()
+    ax3.set_ylabel('Fraction events classified as')
+    ax3.set_xlabel('E [GeV]')
+
+    #### track
+    data_histogram = num_hits
+    he, be  = np.histogram(np.log10(data_histogram[np.where( (l_true == 1)                 & split)]), bins=30, density=dens)
+    hee, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 1) & (l_pred == 0) & split)]), bins=be, range=(be.min(), be.max()), density=dens)
+    hem, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 1) & (l_pred == 1) & split)]), bins=be, range=(be.min(), be.max()), density=dens)
+    hek, _  = np.histogram(np.log10(data_histogram[np.where( (l_true == 1) & (l_pred == 2) & split)]), bins=be, range=(be.min(), be.max()), density=dens)
+
+    plot_normelized_with_error(10 ** be, he, hee, ax4, label='Shower')
+    plot_normelized_with_error(10 ** be, he, hem, ax4, label='Track')
+    plot_normelized_with_error(10 ** be, he, hek, ax4, label='K40')
+    ax4.set_ylim(0,1)
+    ax4.set_xscale('log')
+    ax4.legend()
+    ax4.set_xlabel('Monte carlo hits')
+    
+    ax3.set_ylim(-0.01,1.01)
+    ax4.set_ylim(-0.01,1.01)
+
+    ax4.set_yticklabels([])
+    fig.suptitle('Classification of track events', va='top')
+    if save:
+        fig.savefig('histogram_as_track' + '.pgf')
     plt.show()
     return 0
     
-def histogram_split_types(data, xlabel):
-    fig, axes = plt.subplots(1,3)
-    label_string = ['shower', 'track', 'K40']
-    for j in range(0,3):
-        for i in range(0,6):
-            he, be = np.histogram(data[np.where( types == i)], bins=30, density=dens)
-            he_as_type, _ = np.histogram(data[np.where( (l_pred == j) & (types == i) )], bins=be, range=(be.min(), be.max()), density=dens)
-            plot_normelized_with_error(be, he, he_as_type, axes[j], label=EVT_TYPES[i])
-        axes[j].set_ylim(0,1)
-        axes[j].legend()
-        axes[j].set_title(' ')
-        axes[j].set_ylabel('Fraction of events classified as %s' % (label_string[j]))
-        axes[j].set_xlabel(xlabel)
-    fig.set_size_inches(11.69, 8.27, forward=False) 
-    #fig.savefig('histogram_split_types_' + xlabel + '.pdf', dpi=500)
-    plt.show()
-    return 0
-
-
 # all triggered events
-def histogram_trigger(data_histogram, xlabel):
-    fig, ax1 = plt.subplots(1,1)
-    he, be  = np.histogram(data_histogram[np.where(                  (l_true != 2) )], bins=30, density=dens)
-    hen, _  = np.histogram(data_histogram[np.where( (l_pred != 2)  & (l_true != 2) )], bins=be, range=(be.min(), be.max()), density=dens)
-    het, _  = np.histogram(data_histogram[np.where( (triggers != 0)& (l_true != 2) )], bins=be, range=(be.min(), be.max()), density=dens)
-    plot_normelized_with_error(be, he, hen, ax1, label='KM3NNeT')
-    plot_normelized_with_error(be, he, het, ax1, label='JTrigger')
-    ax1.set_ylim(0,1)
-    ax1.legend()
-    ax1.set_title('Trigger Efficientcy')
-    ax1.set_ylabel('Fraction of events triggered')
-    ax1.set_xlabel(xlabel)
-    if save:
-        fig.savefig('trigger_' + xlabel + '.pgf')
-    plt.show()
-    return 0
+def histogram_trigger():
+    fig, (ax1, ax2) = plt.subplots(1,2)
 
-def events_triggerd_as_K40():
-    print 'K3NNET  ', 100 * np.sum((l_pred != 2) & (l_true == 2)) / float(np.sum( l_true == 2)) 
-    print 'JTrigger', 100 / float(np.sum( l_true == 2))
+    data_histogram = energies
+    he, be  = np.histogram(np.log10(data_histogram[np.where(                  (l_true != 2) )]), bins=60, density=dens)
+    hen, _  = np.histogram(np.log10(data_histogram[np.where( (l_pred != 2)  & (l_true != 2) )]), bins=be, range=(be.min(), be.max()), density=dens)
+    het, _  = np.histogram(np.log10(data_histogram[np.where( (triggers != 0)& (l_true != 2) )]), bins=be, range=(be.min(), be.max()), density=dens)
+
+    plot_normelized_with_error(10 ** be, he, hen, ax1, label='KM3NNeT')
+    plot_normelized_with_error(10 ** be, he, het, ax1, label='JTrigger')
+
+    data_histogram = num_hits 
+    he, be  = np.histogram(np.log10(data_histogram[np.where(                  (l_true != 2) )]), bins=60, density=dens)
+    hen, _  = np.histogram(np.log10(data_histogram[np.where( (l_pred != 2)  & (l_true != 2) )]), bins=be, range=(be.min(), be.max()), density=dens)
+    het, _  = np.histogram(np.log10(data_histogram[np.where( (triggers != 0)& (l_true != 2) )]), bins=be, range=(be.min(), be.max()), density=dens)
+
+    plot_normelized_with_error(10 ** be, he, hen, ax2, label='KM3NNeT')
+    plot_normelized_with_error(10 ** be, he, het, ax2, label='JTrigger')
+
+    ax1.set_ylim(-0.01,1.01)
+    ax2.set_ylim(-0.01,1.01)
+    ax2.set_yticklabels([])
+    ax1.legend()
+    fig.suptitle('Trigger Efficiency\n', va='top')
+    ax1.set_ylabel('Fraction of events triggered')
+    ax1.set_xlabel('E [GeV]')
+    ax2.set_xlabel('Monte Carlo hits')
+    ax1.set_xscale('log')
+    ax2.set_xscale('log')
+    
+    if save:
+        fig.savefig('trigger' + '.pgf')
+    plt.show()
+    return be, he, hen, het 
 
 def trigger_conf_matrix():
     trigger_pred = np.zeros(NUM_TEST_EVENTS)
@@ -228,35 +304,19 @@ def trigger_conf_matrix():
 #histogram_classified_as(np.log10(energies), 'log E', Rxy > 500)
 #histogram_classified_as(np.log10(energies), 'log E', outward)
 #histogram_classified_as(np.log10(energies), 'log E', inward)
-#
+
 #histogram_classified_as(afstand, 'R meters')
 #histogram_classified_as(np.log10(afstand), 'log R ')
 #histogram_classified_as(np.cos(theta), 'cos theta')
 #histogram_classified_as(theta, 'theta')
 #histogram_classified_as(phi, 'phi')
 
-#histogram_classified_as(np.log10(energies), 'log E')
-#histogram_classified_as(np.log10(num_hits), 'log N hits')
+histogram_classified_as()
 
 #histogram_split_types(np.log10(energies), 'log E')
 #histogram_split_types(np.log10(num_hits), 'log N hits')
 
-#histogram_trigger(np.log10(energies), r'$\log_{10}(E_{\nu})$')
-#histogram_trigger(np.log10(num_hits), '$\log_{10}(#Hits)$')
+histogram_trigger()
 
 #plot_confusion_matrix(l_pred)
 #plot_confusion_matrix(trigger_conf_matrix())
-
-#events_triggerd_as_K40()
-
-#pred = predictions[np.where( eq == True)]
-#dens = False 
-#binsn = 100 
-#h, bins = np.histogram(pred[:, 0], bins=binsn, density=dens)
-#plt.plot(bins[:-1], h, label='shower', drawstyle='steps') 
-#h, bins = np.histogram(pred[:, 1], bins=binsn, density=dens)
-#plt.plot(bins[:-1], h, label='track', drawstyle='steps') 
-#h, bins = np.histogram(pred[:, 2], bins=binsn, density=dens)
-#plt.plot(bins[:-1], h, label='k40', drawstyle='steps') 
-#plt.legend()
-#plt.show()
