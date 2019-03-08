@@ -75,6 +75,8 @@ def root_files(range, J='JEW'):
             yield n, evt_type
 
 def extra_root_files():
+    #root extra = numuCC 11842, anumuCC 9245 
+    #k40 extra 5 * 3431  waarvan 2 voor anuK40
     J = "JEW"
     path = PATH + 'data/root_files'
     path += '/out_{2}_{0}_{1}.root'
@@ -114,7 +116,7 @@ def doms_hit_pass_threshold(mc_hits, threshold, pass_k40):
     """ checks if there a at least <<threshold>> doms
         hit by monte carlo hits. retuns true or false"""
     if threshold == 0: return True
-    if len(mc_hits) == 0: return pass_k40 
+    if len(mc_hits) == 0: return bool(pass_k40)
 
     dom_id_set = set()
     for hit in mc_hits:
@@ -157,12 +159,12 @@ def num_events(threshold, root_files_set):
     print tra
     return tra 
 
+#DIR_TRAIN_EVENTS = {'anueNC': 17483, 'numuCC': 47064 - 11842, 'nueCC': 28866 , 'nuATM': 93903, 'anumuCC': 46205 - 9245, 'anueCC': 28990, 'nueNC': 19418, 'nuK40': 51465 - 3*3431, 'anuK40': 48034 - 2*3431}
 DIR_TRAIN_EVENTS = {'anueNC': 17483, 'numuCC': 47064, 'nueCC': 28866, 'nuATM': 93903, 'anumuCC': 46205, 'anueCC': 28990, 'nueNC': 19418, 'nuK40': 51465, 'anuK40': 48034}
 DIR_TEST_EVENTS  = {'anueNC': 4438,  'numuCC': 8593,  'nueCC': 7145,  'nuATM': 23410, 'anumuCC': 9212,  'anueCC': 7124,  'nueNC': 4946,  'nuK40': 10293, 'anuK40': 10293}
 
-#root extra = numuCC 11842, anumuCC 9245 
-#k40 extra 5 * 3431  waarvan 2 voor anuK40
-
+    #root extra = numuCC 11842, anumuCC 9245 
+    #k40 extra 5 * 3431  waarvan 2 voor anuK40
 
 DIR_TRAIN_LABELS = {'shower': DIR_TRAIN_EVENTS['nueCC'] + DIR_TRAIN_EVENTS['anueCC'] + DIR_TRAIN_EVENTS['nueNC'] + DIR_TRAIN_EVENTS['anueNC'],
                     'track':  DIR_TRAIN_EVENTS['numuCC'] + DIR_TRAIN_EVENTS['anumuCC'],

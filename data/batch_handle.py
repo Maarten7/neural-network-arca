@@ -14,6 +14,7 @@ def get_file(file):
             'all_400ns_with_ATM',
             'all_400ns_with_ATM_test',
             'all_400ns_with_ATM_validation',
+            '400ns_ATM_BIG',
             ]
     assert file in files
     path = PATH + 'data/hdf5_files/%s.hdf5'
@@ -34,6 +35,7 @@ def batches(file, batch_size):
 
     f = get_file(file)
     num_events = get_num_events(file)
+    print num_events
 
     for k in range(0, num_events, batch_size):
         if k + batch_size > num_events:
@@ -80,4 +82,3 @@ def index_tots_bins(i):
     typ  = f['all_types'][i]
     f.close()
     return tots, bins, E, nh, i, typ
-

@@ -93,11 +93,11 @@ def root_gen(rootfile):
 
 def trigger_converter():
     print "\ntrigger converter"
-    EventFile.read_timeslices = False 
+    EventFile.read_timeslices = False
     total_trigger_events = 0
 
     for JT, typ, j in root_files(range(13, 16), 'JTE'):
-        print '\t', JT
+        print '\t', JT, typ, j
 
         if typ != 'nuATM': continue
 
@@ -113,7 +113,12 @@ def trigger_converter():
 def trigger_gen(triggerfile):
     for line in triggerfile:
         frame_index, trigger_counter, mask = line.split(',')
-        yield int(frame_index) - 1, int(trigger_counter) + 1, int(mask)
+        yield int(frame_index), int(trigger_counter) + 1, int(mask)
+#        if 'nuATM' in triggerfile:
+#            yield int(frame_index) - 1, int(trigger_counter) + 1, int(mask)
+#        else:
+#            yield int(frame_index), int(trigger_counter) + 1, int(mask)
+
 
 def combine_trigger_and_root():
     print "\ncombine trigger and root"
@@ -142,7 +147,7 @@ def combine_trigger_and_root():
                 events += 1
                 total_events += 1
 
-                if root_index == frame_index:
+                if (root_index == frame_index and typ!='nuATM') or (root_index==frame_index-1 and typ=='nuATM'):
                     out_file.write("%i, %i, %i\n" % (root_index, passed, mask))
 
                     total_trigger += 1
@@ -203,12 +208,12 @@ def write_to_hdf5():
     print "\nwrite to hdf5"
     final_out = open('final_out.txt', 'r')
     a = set()
-    with h5py.File(PATH + 'data/hdf5_files/20000ns_250ns_all_events_labels_meta_test.hdf5', 'a') as hfile:
+    with h5py.File(PATH + 'data/hdf5_files/test_file.hdf5', 'a') as hfile:
 
         try:
-            dset_m = hfile.create_dataset("all_masks", dtype=int, shape=(62044,)) 
+            dset_m = hfile.create_dataset("all_masks", dtype=int, shape=(85454,)) 
         except RuntimeError:
-            pass
+            dset_m = hfile["all_masks"]
 
         j = 0 
         for i, line in enumerate(final_out):
@@ -225,9 +230,9 @@ def write_to_hdf5():
 def main():
     #root_converter()
     #trigger_converter()
-    combine_trigger_and_root()
-    concatenate_files()
-    #write_to_hdf5()
+    #combine_trigger_and_root()
+    #concatenate_files()
+    write_to_hdf5()
     pass
 
 if __name__ == "__main__":
