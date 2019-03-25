@@ -22,29 +22,23 @@ saver = tf.train.Saver()
 def writer(out_file):
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
     with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
-        #saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
+        saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
 
         ##########################################################################
         print "Testing"
-        #hfile = h5py.File(PATH + 'results/%s/%s.hdf5' % (model.title, out_file), 'w')
+        hfile = h5py.File(PATH + 'results/%s/%s.hdf5' % (model.title, out_file), 'w')
 
         num_events = NUM_TEST_EVENTS
-        #dset_pred = hfile.create_dataset('all_test_predictions', shape=(num_events, NUM_CLASSES), dtype='float')
+        dset_pred = hfile.create_dataset('all_test_predictions', shape=(num_events, NUM_CLASSES), dtype='float')
 
         i = 0
         batch_size = 30 
         for events, labels in batches(test_file, batch_size):
             
-            jjj = np.random.randint(50)
-            feed_dict = {model.x: events[:,jjj], model.y: labels, model.keep_prob: 1.}
-            ts = time()
+            feed_dict = {model.x: events, model.y: labels, model.keep_prob: 1.}
             p = sess.run(model.prediction, feed_dict=feed_dict)
-            te = time()
-            print float(te-ts) / batch_size
 
-
-            #dset_pred[i: i + batch_size] = p
+            dset_pred[i: i + batch_size] = p
 
             i += batch_size
 

@@ -180,7 +180,7 @@ def add_stuff(file):
         #dset_h = hfile.create_dataset("all_muon_th", dtype=float, shape=(num_events,))        
         #dset_w = hfile.create_dataset("all_weights", dtype=float, shape=(num_events,))        
         #dset_d = hfile.create_dataset("all_directions", dtype=float, shape=(num_events,3))        
-        dset_t = hfile.create_dataset("all_types", dtype=float, shape=(num_events,))
+        #dset_t = hfile.create_dataset("all_types", dtype=float, shape=(num_events,))
 
         dset_l = hfile['all_labels']
         dset_e = hfile['all_energies']
@@ -188,7 +188,7 @@ def add_stuff(file):
         dset_m = hfile['all_num_muons']
         dset_w = hfile['all_weights']
         dset_d = hfile['all_directions']
-        #dset_t = hfile['all_types']
+        dset_t = hfile['all_types']
 
         random_i = random_index_gen(num_events, test='test' in file)
         i = random_i.next() 
@@ -214,13 +214,13 @@ def add_stuff(file):
                     #dset_w[i] = get_weigth(evt, type_index) / float(num_events)
                     #dset_d[i] = get_dir(evt, type_index) 
                     #dset_h[i] = get_thm(evt, type_index)
-                    dset_t[i] = type_index
+                    #dset_t[i] = type_index
 
                     i = random_i.next() 
 
 #add_stuff(file='data/hdf5_files/test_file.hdf5')
 
-data_writer(file='test.hdf5', tbin_size=400)
+#data_writer(file='test.hdf5', tbin_size=400)
 #data_writer(file='data/hdf5_files/400ns_ATM_BIG.hdf5', tbin_size=400)
 #data_writer(file='data/hdf5_files/400ns_ATM_BIG_test.hdf5', tbin_size=400) 
 #validation_file(file='data/hdf5_files/all_400ns_with_ATM_validation.hdf5', test_file='data/hdf5_files/all_400ns_with_ATM_test.hdf5')
