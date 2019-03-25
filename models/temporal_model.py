@@ -8,32 +8,8 @@ import h5py
 from tf_help import conv3d, maxpool3d, weight, bias
 from helper_functions import EVT_TYPES, NUM_CLASSES, PATH, NUM_TRAIN_EVENTS
 
-title = 'temporal'
-num_mini_timeslices = 50
-
-#class event_and_label_gen:
-#    def __init__(self, title):
-#        self.title = title
-#
-#    def __call__(self):
-#        with h5py.File(self.title, 'r') as f:
-#            for i in range(NUM_TRAIN_EVENTS):
-#                label = f['all_labels'][i]
-#
-#                bins = f['all_bins'][i]
-#                tots = f['all_tots'][i]
-#
-#                event = np.zeros((num_mini_timeslices, 13, 13, 18, 3))
-#                event[tuple(bins)] = tots
-#            yield event, label
-#            
-#data_set = tf.data.Dataset.from_generator(
-#    generator=event_and_label_gen(PATH + 'data/hdf5_files/20000ns_400ns_all_events_labels_meta.hdf5'),
-#    output_types=(tf.float32, tf.int32)
-#    ).batch(15)
-#    output_shapes=(tf.TensorShape([num_mini_timeslices, 13, 13, 18, 3]), tf.TensorShape([3])))
-
-#events, labels = data_set.make_one_shot_iterator().get_next()
+title = 'temporal_atm'
+num_mini_timeslices = 50 
 
 x = tf.placeholder(tf.float32, [None, num_mini_timeslices, 13, 13, 18, 3], name="X_placeholder")
 y = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="Y_placeholder")

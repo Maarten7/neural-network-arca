@@ -2,11 +2,13 @@ import tensorflow as tf
 import numpy as np
 from tf_help import conv3d, maxpool3d, weight, bias
 import batch_handle
+from helper_functions import NUM_CLASSES
+
+title = 'multi_gpu'
+num_mini_timeslices = 200
 from toy_model import make_toy
 from tf_help import *
-title = 'multi_gpu'
 NUM_CLASSES = 3
-num_mini_timeslices = 50
 
 def km3nnet(x):
     """ input: event tensor numpy shape num_minitimeslices, 18, 18, 13, 3
@@ -52,7 +54,7 @@ def km3nnet(x):
     lstm_layer = tf.contrib.rnn.BasicLSTMCell(nodes["l5"], forget_bias=1.)
     outputs, _ = tf.contrib.rnn.static_rnn(lstm_layer, c, dtype=tf.float32)
 
-    output = tf.matmul(outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
+   output = tf.matmul(outputs[-1], weight([nodes["l5"], NUM_CLASSES])) + bias(NUM_CLASSES)
     
     return tf.reshape(output, [3])
 
@@ -94,9 +96,6 @@ def average_gradients(tower_grads):
     for grad_and_vars in zip(*tower_grads):
         grads = []
         for g, _ in grad_and_vars:
-            
-            print "\t",
-            print g 
             expanded_g = tf.expand_dims(g, 0)
 
             grads.append(expanded_g)
@@ -127,7 +126,6 @@ def train():
             for i in [1, 0]:
                 with tf.device('/GPU:%d' % i):
                     with tf.name_scope('tower_%d' % i) as scope:
-
                         events_batch, labels_batch = batch_queue.dequeue()
 
                         loss = tower_loss(scope, events_batch, labels_batch)

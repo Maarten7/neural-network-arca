@@ -6,43 +6,48 @@
     Then it writes all the output to file. The output is the softmax threevector
     for each evetn"""
 import tensorflow as tf
-import numpy as np
 import h5py
-import sys
-import importlib
-import matplotlib.pyplot as plt
-from time import time
+
 from helper_functions import *
-from models.batch_handle import batches
+from data.batch_handle import batches
+from time import time
 
 model = import_model()
 
+test_file = 'all_400ns_with_ATM'
 # Tensorboard and saving variables
 saver = tf.train.Saver()
 
 # Session
-def writer():
+def writer(out_file):
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
     with tf.Session(config=config) as sess:
-        saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
+        sess.run(tf.global_variables_initializer())
+        #saver.restore(sess, PATH + "weights/%s.ckpt" % model.title)
 
         ##########################################################################
         print "Testing"
-        with h5py.File(PATH + 'data/results/%s/20000ns_test_result_%s.hdf5' % (model.title, model.title), 'w') as hfile:
-            dset_pred = hfile.create_dataset('all_test_predictions', shape=(NUM_TEST_EVENTS, model.NUM_CLASSES), dtype='float')
-            i = 0
-            batch_size = 30 
-            for events, labels in batches(batch_size, test=True):
+        #hfile = h5py.File(PATH + 'results/%s/%s.hdf5' % (model.title, out_file), 'w')
 
-                ts = time()
+        num_events = NUM_TEST_EVENTS
+        #dset_pred = hfile.create_dataset('all_test_predictions', shape=(num_events, NUM_CLASSES), dtype='float')
 
-                feed_dict = {model.x: events, model.y: labels, model.keep_prob: 1.}
-                p = sess.run(model.prediction, feed_dict=feed_dict)
+        i = 0
+        batch_size = 30 
+        for events, labels in batches(test_file, batch_size):
+            
+            jjj = np.random.randint(50)
+            feed_dict = {model.x: events[:,jjj], model.y: labels, model.keep_prob: 1.}
+            ts = time()
+            p = sess.run(model.prediction, feed_dict=feed_dict)
+            te = time()
+            print float(te-ts) / batch_size
 
-                dset_pred[i: i + batch_size] = p
 
-                print i, NUM_TEST_EVENTS
-                i += batch_size
-                print '\tprediction', (time() - ts) / batch_size
+            #dset_pred[i: i + batch_size] = p
 
-writer()
+            i += batch_size
+
+        hfile.close()
+
+writer('all_400ns_with_ATM_test_result_8')
